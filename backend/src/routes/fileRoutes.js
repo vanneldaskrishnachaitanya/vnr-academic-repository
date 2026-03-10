@@ -16,8 +16,7 @@ const {
   getPendingFiles,
   approveFile,
   rejectFile,
-  deleteFile,
-  deleteSubject
+  deleteFile
 } = require('../controllers/fileController');
 
 const { upload } = require('../services/fileService');
@@ -147,17 +146,6 @@ adminRouter.delete(
   mongoIdParam('id'),
   validate,
   deleteFile
-);
-
-/**
- * DELETE /admin/subjects
- * Deletes a folder (subject) and all files inside it
- */
-adminRouter.delete(
-  '/subjects',
-  protect,
-  restrictTo('admin'),
-  deleteSubject
 );
 
 module.exports.adminRouter = adminRouter;
