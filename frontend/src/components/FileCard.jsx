@@ -179,23 +179,30 @@ const isAdmin = backendUser?.role === "admin";
 
   /* ───────── DOWNLOAD ───────── */
 
-const handleDownload = () => {
+const handleDownload = async () => {
 
-  const url = `${import.meta.env.VITE_API_BASE_URL}/files/download/${file._id}`;
+  try {
 
-  const link = document.createElement("a");
+    const res = await api.get(`/files/download/${file._id}`);
 
-  link.href = url;
+    const link = document.createElement("a");
 
-  link.target = "_blank";
+    link.href = res.data.url;
 
-  link.setAttribute("download", file.originalName);
+    link.download = file.originalName;
 
-  document.body.appendChild(link);
+    document.body.appendChild(link);
 
-  link.click();
+    link.click();
 
-  link.remove();
+    link.remove();
+
+  } catch (err) {
+
+    console.error("Download failed", err);
+    alert("Download failed");
+
+  }
 
 };
 

@@ -169,7 +169,6 @@ const getFileById = async (req, res, next) => {
 // PREVIEW FILE (Cloudinary URL redirect)
 // ─────────────────────────────────────────────────────────────
 const previewFile = async (req, res, next) => {
-
   try {
 
     const file = await File.findById(req.params.id);
@@ -188,20 +187,20 @@ const previewFile = async (req, res, next) => {
       });
     }
 
-    // redirect to Cloudinary preview
-    return res.redirect(file.filePath);
+    return res.json({
+      success: true,
+      url: file.filePath
+    });
 
   } catch (err) {
     next(err);
   }
-
 };
 
 // ─────────────────────────────────────────────────────────────
 // DOWNLOAD FILE
 // ─────────────────────────────────────────────────────────────
 const downloadFile = async (req, res, next) => {
-
   try {
 
     const file = await File.findById(req.params.id);
@@ -220,13 +219,14 @@ const downloadFile = async (req, res, next) => {
       });
     }
 
-    // redirect to Cloudinary download
-    return res.redirect(file.filePath);
+    return res.json({
+      success: true,
+      url: file.filePath
+    });
 
   } catch (err) {
     next(err);
   }
-
 };
 
 // ─────────────────────────────────────────────────────────────
