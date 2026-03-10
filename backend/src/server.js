@@ -1,6 +1,6 @@
 'use strict';
 
-// ── Load environment variables first ─────────────────────────────────────────
+// ── Load environment variables first ─────────────────────────
 require('dotenv').config();
 
 const express   = require('express');
@@ -8,19 +8,12 @@ const helmet    = require('helmet');
 const cors      = require('cors');
 const morgan    = require('morgan');
 const rateLimit = require('express-rate-limit');
+
 const connectDB        = require('./config/db');
 const { initFirebase } = require('./config/firebase');
 const logger           = require('./utils/logger');
-const fs = require("fs");
-const path = require("path");
 
-const uploadsPath = path.join(__dirname, "../uploads");
-
-if (!fs.existsSync(uploadsPath)) {
-  fs.mkdirSync(uploadsPath, { recursive: true });
-  console.log("Uploads folder created");
-}
-// ── Route modules ─────────────────────────────────────────────────────────────
+// ── Route modules ─────────────────────────────────────────────
 const authRoutes            = require('./routes/authRoutes');
 const fileRoutes            = require('./routes/fileRoutes');
 const { adminRouter }       = require('./routes/fileRoutes');
@@ -28,8 +21,8 @@ const reportRoutes          = require('./routes/reportRoutes');
 const { adminReportRouter } = require('./routes/reportRoutes');
 const folderRoutes          = require('./routes/folderRoutes');
 
-// ── App setup ─────────────────────────────────────────────────────────────────
-const app = express();  
+// ── App setup ─────────────────────────────────────────────────
+const app = express();
 
 // Security headers
 app.use(helmet());
@@ -48,10 +41,10 @@ app.use(morgan('dev', {
 }));
 
 // Body parsers
-app.use(express.json({ limit: '1mb' }));
-app.use(express.urlencoded({ extended: true, limit: '1mb' }));
+app.use(express.json({ limit: '5mb' }));
+app.use(express.urlencoded({ extended: true, limit: '5mb' }));
 
-// ── Rate limiting ─────────────────────────────────────────────────────────────
+// ── Rate limiting ─────────────────────────────────────────────
 const globalLimiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 300,
@@ -74,7 +67,7 @@ const authLimiter = rateLimit({
   }
 });
 
-// ── Health check ──────────────────────────────────────────────────────────────
+// ── Health check ──────────────────────────────────────────────
 app.get('/health', (_req, res) => {
   res.json({
     success: true,
@@ -83,7 +76,7 @@ app.get('/health', (_req, res) => {
   });
 });
 
-// ── API Routes ────────────────────────────────────────────────────────────────
+// ── API Routes ────────────────────────────────────────────────
 app.use('/auth', authLimiter, authRoutes);
 app.use('/files', fileRoutes);
 app.use('/folders', folderRoutes);
@@ -93,16 +86,15 @@ app.use('/reports', reportRoutes);
 app.use('/admin', adminRouter);
 app.use('/admin', adminReportRouter);
 
-// ── 404 catch-all ─────────────────────────────────────────────────────────────
+// ── 404 catch-all ─────────────────────────────────────────────
 app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: `Route ${req.method} ${req.path} not found`,
+    message: `Route ${req.method} ${req.path} not found`
   });
 });
 
-// ── Global error handler ──────────────────────────────────────────────────────
-// eslint-disable-next-line no-unused-vars
+// ── Global error handler ──────────────────────────────────────
 app.use((err, req, res, next) => {
 
   logger.error(`${req.method} ${req.path} → ${err.message}`, err);
@@ -135,7 +127,7 @@ app.use((err, req, res, next) => {
     const maxMb = process.env.MAX_FILE_SIZE_MB || 25;
     return res.status(400).json({
       success: false,
-      message: `File exceeds ${maxMb} MB limit.`
+      message: `File exceeds ${maxMb} MB limit`
     });
   }
 
@@ -146,7 +138,7 @@ app.use((err, req, res, next) => {
     });
   }
 
-  const status = err.statusCode || err.status || 500;
+  const status  = err.statusCode || err.status || 500;
   const message = status < 500 ? err.message : 'Internal server error';
 
   return res.status(status).json({
@@ -156,15 +148,14 @@ app.use((err, req, res, next) => {
 
 });
 
-// ── Bootstrap ─────────────────────────────────────────────────────────────────
-const PORT = parseInt(process.env.PORT, 10) || 5000;
+// ── Bootstrap ─────────────────────────────────────────────────
+const PORT = process.env.PORT || 5000;
 
 const start = async () => {
 
   try {
 
     initFirebase();
-
     await connectDB();
 
     const server = app.listen(PORT, () => {
@@ -173,26 +164,24 @@ const start = async () => {
         `Server running in ${process.env.NODE_ENV || 'development'} mode on port ${PORT}`
       );
 
-      logger.info(`Health → http://localhost:${PORT}/health`);
+      logger.info(`Health endpoint → /health`);
 
     });
 
+    // Graceful shutdown
     const shutdown = (signal) => {
 
       logger.warn(`${signal} received — shutting down`);
 
       server.close(() => {
-
         logger.info('HTTP server closed');
-
         process.exit(0);
-
       });
 
     };
 
     process.on('SIGTERM', () => shutdown('SIGTERM'));
-    process.on('SIGINT', () => shutdown('SIGINT'));
+    process.on('SIGINT',  () => shutdown('SIGINT'));
 
     process.on('unhandledRejection', (reason) => {
 
