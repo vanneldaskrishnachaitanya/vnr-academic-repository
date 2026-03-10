@@ -1,29 +1,24 @@
 'use strict';
 
 /**
- * fileService.js  (enhanced)
- * ──────────────────────────
+ * fileService.js  (Cloudinary version)
+ * ─────────────────────────────────────
  * Responsibilities:
- *   1. Multer configuration  — organised hierarchy, descriptive names,
- *                              MIME filtering, size cap
- *   2. saveFileMeta()        — persist upload metadata to MongoDB
- *   3. checkDuplicate()      — query DB before accepting a new upload
- *   4. buildFileFilter()     — construct Mongoose query from URL params
+ *   1. Multer configuration using Cloudinary storage
+ *   2. saveFileMeta() — persist upload metadata to MongoDB
+ *   3. checkDuplicate() — query DB before accepting a new upload
+ *   4. buildFileFilter() — construct Mongoose query from URL params
  */
 
-const path   = require('path');
 const multer = require('multer');
-const File   = require('../models/File');
+const { CloudinaryStorage } = require('multer-storage-cloudinary');
+const cloudinary = require('../config/cloudinary');
+const File = require('../models/File');
 const logger = require('../utils/logger');
-const {
-  UPLOAD_ROOT,
-  generateFileName,
-  buildStoragePath,
-  deleteFileFromDisk,
-  buildDuplicateFilter,
-} = require('../utils/fileHelpers');
+const { buildDuplicateFilter } = require('../utils/fileHelpers');
 
-// ── Allowed MIME types ───────────────────────────────────────────────────────
+// ── Allowed MIME types ─────────────────────────────────────────
+
 const ALLOWED_MIMETYPES = new Set([
   'application/pdf',
   'application/msword',
@@ -42,36 +37,26 @@ const ALLOWED_MIMETYPES = new Set([
   'application/x-zip-compressed',
 ]);
 
-// ── Multer disk storage ──────────────────────────────────────────────────────
+// ── Cloudinary storage ─────────────────────────────────────────
 
-const storage = multer.diskStorage({
-  destination(req, _file, cb) {
-    try {
-      const { regulation, branch, subject, category } = req.body;
-      if (regulation && branch && subject && category) {
-        cb(null, buildStoragePath({ regulation, branch, subject, category }));
-      } else {
-        cb(null, UPLOAD_ROOT);
-      }
-    } catch (err) { cb(err); }
-  },
+const storage = new CloudinaryStorage({
+  cloudinary,
+  params: async (req, file) => {
 
-  filename(req, file, cb) {
-    try {
-      const { regulation, branch, subject, category, examType } = req.body;
-      cb(null, generateFileName({
-        regulation:   (regulation  || 'MISC').toUpperCase(),
-        branch:       (branch      || 'MISC').toUpperCase(),
-        subject:      subject      || 'Unknown',
-        category:     category     || 'resource',
-        examType:     examType     || null,
-        originalName: file.originalname,
-      }));
-    } catch (err) { cb(err); }
+    const { regulation, branch, subject, category, examType } = req.body;
+
+    return {
+      folder: `vnr_repository/${regulation || 'misc'}/${branch || 'misc'}/${subject || 'misc'}`,
+      resource_type: 'auto',
+      public_id: `${Date.now()}-${file.originalname}`,
+    };
   },
 });
 
+// ── File filter ────────────────────────────────────────────────
+
 const fileFilter = (_req, file, cb) => {
+
   if (ALLOWED_MIMETYPES.has(file.mimetype)) {
     cb(null, true);
   } else {
@@ -80,64 +65,118 @@ const fileFilter = (_req, file, cb) => {
       { statusCode: 415 }
     ));
   }
+
 };
+
+// ── Max upload size ────────────────────────────────────────────
 
 const MAX_BYTES = (parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 25) * 1024 * 1024;
 
-const upload = multer({ storage, fileFilter, limits: { fileSize: MAX_BYTES } });
+const upload = multer({
+  storage,
+  fileFilter,
+  limits: { fileSize: MAX_BYTES }
+});
 
-// ── Duplicate detection ──────────────────────────────────────────────────────
+// ── Duplicate detection ────────────────────────────────────────
 
-const checkDuplicate = async ({ regulation, branch, subject, category, examType, originalName }) => {
-  const filter = buildDuplicateFilter({ regulation, branch, subject, category, examType, originalName });
-  return File.findOne(filter).lean();
-};
+const checkDuplicate = async ({
+  regulation,
+  branch,
+  subject,
+  category,
+  examType,
+  originalName
+}) => {
 
-// ── Save metadata ────────────────────────────────────────────────────────────
-
-const saveFileMeta = async ({ multerFile, body, userId }) => {
-  const { regulation, branch, subject, category, examType, year } = body;
-  const relPath = path.relative(process.cwd(), multerFile.path);
-
-  const doc = await File.create({
-    regulation:   regulation.toUpperCase(),
-    branch:       branch.toUpperCase(),
-    subject:      subject.trim(),
+  const filter = buildDuplicateFilter({
+    regulation,
+    branch,
+    subject,
     category,
-    examType:     category === 'paper' ? (examType || null) : null,
-    year:         year ? parseInt(year, 10) : null,
-    originalName: multerFile.originalname,
-    storedName:   multerFile.filename,
-    filePath:     relPath,
-    mimeType:     multerFile.mimetype,
-    fileSize:     multerFile.size,
-    uploadedBy:   userId,
-    status:       'pending',
-    uploadedAt:   new Date(),
+    examType,
+    originalName
   });
 
-  logger.info(`Metadata saved: ${doc.storedName} [${doc._id}]`);
-  return doc;
+  return File.findOne(filter).lean();
+
 };
 
-// ── Query filter builder ─────────────────────────────────────────────────────
+// ── Save metadata to MongoDB ───────────────────────────────────
 
-const buildFileFilter = ({ regulation, branch, subject, category, examType, year }) => {
+const saveFileMeta = async ({ multerFile, body, userId }) => {
+
+  const {
+    regulation,
+    branch,
+    subject,
+    category,
+    examType,
+    year
+  } = body;
+
+  const doc = await File.create({
+
+    regulation: regulation.toUpperCase(),
+    branch: branch.toUpperCase(),
+    subject: subject.trim(),
+
+    category,
+    examType: category === 'paper' ? (examType || null) : null,
+
+    year: year ? parseInt(year, 10) : null,
+
+    originalName: multerFile.originalname,
+
+    storedName: multerFile.filename || multerFile.public_id,
+
+    filePath: multerFile.path,   // Cloudinary URL
+
+    mimeType: multerFile.mimetype,
+
+    fileSize: multerFile.size,
+
+    uploadedBy: userId,
+
+    status: 'pending',
+
+    uploadedAt: new Date(),
+
+  });
+
+  logger.info(`Metadata saved: ${doc.originalName} [${doc._id}]`);
+
+  return doc;
+
+};
+
+// ── Query filter builder ───────────────────────────────────────
+
+const buildFileFilter = ({
+  regulation,
+  branch,
+  subject,
+  category,
+  examType,
+  year
+}) => {
+
   const filter = {};
+
   if (regulation) filter.regulation = regulation.toUpperCase();
-  if (branch)     filter.branch     = branch.toUpperCase();
-  if (subject)    filter.subject    = new RegExp(subject.trim(), 'i');
-  if (category)   filter.category   = category;
-  if (examType)   filter.examType   = examType;
-  if (year)       filter.year       = parseInt(year, 10);
+  if (branch) filter.branch = branch.toUpperCase();
+  if (subject) filter.subject = new RegExp(subject.trim(), 'i');
+  if (category) filter.category = category;
+  if (examType) filter.examType = examType;
+  if (year) filter.year = parseInt(year, 10);
+
   return filter;
+
 };
 
 module.exports = {
   upload,
   checkDuplicate,
   saveFileMeta,
-  buildFileFilter,
-  deleteFileFromDisk,
-  UPLOAD_ROOT,
+  buildFileFilter
 };
