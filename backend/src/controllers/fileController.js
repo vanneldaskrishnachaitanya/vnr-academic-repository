@@ -177,25 +177,23 @@ const previewFile = async (req, res, next) => {
     if (!file) {
       return res.status(404).json({
         success: false,
-        message: 'File not found'
+        message: "File not found"
       });
     }
 
-    if (req.user.role === 'student' && file.status !== 'approved') {
-      return res.status(404).json({
+    if (req.user.role === "student" && file.status !== "approved") {
+      return res.status(403).json({
         success: false,
-        message: 'File not found'
+        message: "File not approved yet"
       });
     }
-
-    File.findByIdAndUpdate(file._id, {
-      $inc: { downloadCount: 1 }
-    }).exec();
 
     return res.redirect(file.filePath);
 
   } catch (err) {
+
     next(err);
+
   }
 
 };
@@ -213,25 +211,23 @@ const downloadFile = async (req, res, next) => {
     if (!file) {
       return res.status(404).json({
         success: false,
-        message: 'File not found'
+        message: "File not found"
       });
     }
 
-    if (req.user.role === 'student' && file.status !== 'approved') {
-      return res.status(404).json({
+    if (req.user.role === "student" && file.status !== "approved") {
+      return res.status(403).json({
         success: false,
-        message: 'File not found'
+        message: "File not approved yet"
       });
     }
-
-    File.findByIdAndUpdate(file._id, {
-      $inc: { downloadCount: 1 }
-    }).exec();
 
     return res.redirect(file.filePath);
 
   } catch (err) {
+
     next(err);
+
   }
 
 };
