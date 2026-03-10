@@ -8,15 +8,17 @@ const helmet    = require('helmet');
 const cors      = require('cors');
 const morgan    = require('morgan');
 const rateLimit = require('express-rate-limit');
-const path      = require('path');
-
 const connectDB        = require('./config/db');
 const { initFirebase } = require('./config/firebase');
 const logger           = require('./utils/logger');
 const fs = require("fs");
+const path = require("path");
 
-if (!fs.existsSync("uploads")) {
-  fs.mkdirSync("uploads");
+const uploadsPath = path.join(__dirname, "../uploads");
+
+if (!fs.existsSync(uploadsPath)) {
+  fs.mkdirSync(uploadsPath, { recursive: true });
+  console.log("Uploads folder created");
 }
 // ── Route modules ─────────────────────────────────────────────────────────────
 const authRoutes            = require('./routes/authRoutes');
