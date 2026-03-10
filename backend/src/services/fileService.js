@@ -1,23 +1,11 @@
 'use strict';
 
-/**
- * fileService.js  (Cloudinary version)
- * ─────────────────────────────────────
- * Responsibilities:
- *   1. Multer configuration using Cloudinary storage
- *   2. saveFileMeta() — persist upload metadata to MongoDB
- *   3. checkDuplicate() — query DB before accepting a new upload
- *   4. buildFileFilter() — construct Mongoose query from URL params
- */
-
 const multer = require('multer');
 const { CloudinaryStorage } = require('multer-storage-cloudinary');
 const cloudinary = require('../config/cloudinary');
 const File = require('../models/File');
 const logger = require('../utils/logger');
 const { buildDuplicateFilter } = require('../utils/fileHelpers');
-
-// ── Allowed MIME types ─────────────────────────────────────────
 
 const ALLOWED_MIMETYPES = new Set([
   'application/pdf',
@@ -37,23 +25,30 @@ const ALLOWED_MIMETYPES = new Set([
   'application/x-zip-compressed',
 ]);
 
-// ── Cloudinary storage ─────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Cloudinary Storage
+// ─────────────────────────────────────────────
 
 const storage = new CloudinaryStorage({
   cloudinary,
   params: async (req, file) => {
 
-    const { regulation, branch, subject, category, examType } = req.body;
+    const { regulation, branch, subject } = req.body;
+
+    // remove extension from original name
+    const nameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
 
     return {
       folder: `vnr_repository/${regulation || 'misc'}/${branch || 'misc'}/${subject || 'misc'}`,
       resource_type: 'auto',
-      public_id: `${Date.now()}-${file.originalname}`,
+      public_id: `${Date.now()}-${nameWithoutExt}`
     };
   },
 });
 
-// ── File filter ────────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// File filter
+// ─────────────────────────────────────────────
 
 const fileFilter = (_req, file, cb) => {
 
@@ -68,8 +63,6 @@ const fileFilter = (_req, file, cb) => {
 
 };
 
-// ── Max upload size ────────────────────────────────────────────
-
 const MAX_BYTES = (parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 25) * 1024 * 1024;
 
 const upload = multer({
@@ -78,7 +71,9 @@ const upload = multer({
   limits: { fileSize: MAX_BYTES }
 });
 
-// ── Duplicate detection ────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Duplicate check
+// ─────────────────────────────────────────────
 
 const checkDuplicate = async ({
   regulation,
@@ -102,7 +97,9 @@ const checkDuplicate = async ({
 
 };
 
-// ── Save metadata to MongoDB ───────────────────────────────────
+// ─────────────────────────────────────────────
+// Save metadata
+// ─────────────────────────────────────────────
 
 const saveFileMeta = async ({ multerFile, body, userId }) => {
 
@@ -150,7 +147,9 @@ const saveFileMeta = async ({ multerFile, body, userId }) => {
 
 };
 
-// ── Query filter builder ───────────────────────────────────────
+// ─────────────────────────────────────────────
+// Build query filter
+// ─────────────────────────────────────────────
 
 const buildFileFilter = ({
   regulation,
