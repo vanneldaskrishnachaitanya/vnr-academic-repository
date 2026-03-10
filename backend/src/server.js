@@ -13,7 +13,11 @@ const path      = require('path');
 const connectDB        = require('./config/db');
 const { initFirebase } = require('./config/firebase');
 const logger           = require('./utils/logger');
+const fs = require("fs");
 
+if (!fs.existsSync("uploads")) {
+  fs.mkdirSync("uploads");
+}
 // ── Route modules ─────────────────────────────────────────────────────────────
 const authRoutes            = require('./routes/authRoutes');
 const fileRoutes            = require('./routes/fileRoutes');
@@ -23,7 +27,7 @@ const { adminReportRouter } = require('./routes/reportRoutes');
 const folderRoutes          = require('./routes/folderRoutes');
 
 // ── App setup ─────────────────────────────────────────────────────────────────
-const app = express();
+const app = express();  
 
 // Security headers
 app.use(helmet());
