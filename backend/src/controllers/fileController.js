@@ -1,365 +1,397 @@
 'use strict';
 
 /**
- * fileController.js  (Cloudinary version)
- * Files are stored in Cloudinary, not on disk.
- */
 
-const File   = require('../models/File');
+* fileController.js
+* Files stored in Cloudinary
+  */
+
+const File = require('../models/File');
 const Report = require('../models/Report');
 
 const {
-  checkDuplicate,
-  saveFileMeta,
-  buildFileFilter
+checkDuplicate,
+saveFileMeta,
+buildFileFilter
 } = require('../services/fileService');
 
 const logger = require('../utils/logger');
 
-
-// ─────────────────────────────────────────────────────────────
-// POST /files/upload
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+POST /files/upload
+───────────────────────────────────────────── */
 const uploadFile = async (req, res, next) => {
+try {
+if (!req.file) {
+  return res.status(400).json({
+    success: false,
+    message: 'No file uploaded'
+  });
+}
 
-  try {
+const { regulation, branch, subject, category, examType } = req.body;
 
-    if (!req.file) {
-      return res.status(400).json({
-        success: false,
-        message: 'No file uploaded'
-      });
-    }
+if (category === 'paper' && !examType) {
+  return res.status(400).json({
+    success: false,
+    message: 'examType required for papers'
+  });
+}
 
-    const { regulation, branch, subject, category, examType } = req.body;
+const duplicate = await checkDuplicate({
+  regulation,
+  branch,
+  subject,
+  category,
+  examType: category === 'paper' ? examType : null,
+  originalName: req.file.originalname
+});
 
-    if (category === 'paper' && !examType) {
-      return res.status(400).json({
-        success: false,
-        message: "examType required for papers"
-      });
-    }
+if (duplicate) {
+  return res.status(409).json({
+    success: false,
+    message: 'Duplicate file already exists'
+  });
+}
 
-    const duplicate = await checkDuplicate({
-      regulation,
-      branch,
-      subject,
-      category,
-      examType: category === 'paper' ? examType : null,
-      originalName: req.file.originalname
-    });
+const file = await saveFileMeta({
+  multerFile: req.file,
+  body: req.body,
+  userId: req.user._id
+});
 
-    if (duplicate) {
-      return res.status(409).json({
-        success: false,
-        message: 'Duplicate file already exists'
-      });
-    }
+logger.info(`Upload: ${file.originalName} by ${req.user.email}`);
 
-    const file = await saveFileMeta({
-      multerFile: req.file,
-      body: req.body,
-      userId: req.user._id
-    });
+return res.status(201).json({
+  success: true,
+  message: 'File uploaded successfully. Waiting for admin approval.',
+  data: { file }
+});
 
-    logger.info(`Upload: ${file.originalName} by ${req.user.email}`);
 
-    return res.status(201).json({
-      success: true,
-      message: 'File uploaded successfully. Waiting for admin approval.',
-      data: { file }
-    });
-
-  } catch (err) {
-    next(err);
-  }
-
+} catch (err) {
+next(err);
+}
 };
 
-
-// ─────────────────────────────────────────────────────────────
-// GET /files
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+GET /files
+───────────────────────────────────────────── */
 const getFiles = async (req, res, next) => {
+try {
 
-  try {
 
-    const { page = 1, limit = 20, status, ...filterParams } = req.query;
+const { page = 1, limit = 20, status, ...filterParams } = req.query;
 
-    const filter = buildFileFilter(filterParams);
+const filter = buildFileFilter(filterParams);
 
-    if (req.user.role !== 'admin') {
-      filter.status = 'approved';
-    } else if (status) {
-      filter.status = status;
+if (req.user.role !== 'admin') {
+  filter.status = 'approved';
+} else if (status) {
+  filter.status = status;
+}
+
+const pageNum = Math.max(1, parseInt(page));
+const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
+
+const [files, total] = await Promise.all([
+  File.find(filter)
+    .populate('uploadedBy', 'name email')
+    .sort({ uploadedAt: -1 })
+    .skip((pageNum - 1) * limitNum)
+    .limit(limitNum)
+    .lean(),
+
+  File.countDocuments(filter)
+]);
+
+res.json({
+  success: true,
+  data: {
+    files,
+    pagination: {
+      total,
+      page: pageNum,
+      limit: limitNum,
+      totalPages: Math.ceil(total / limitNum)
     }
-
-    const pageNum  = Math.max(1, parseInt(page));
-    const limitNum = Math.min(50, Math.max(1, parseInt(limit)));
-
-    const [files, total] = await Promise.all([
-      File.find(filter)
-        .populate('uploadedBy', 'name email')
-        .sort({ uploadedAt: -1 })
-        .skip((pageNum - 1) * limitNum)
-        .limit(limitNum)
-        .lean(),
-
-      File.countDocuments(filter)
-    ]);
-
-    res.json({
-      success: true,
-      data: {
-        files,
-        pagination: {
-          total,
-          page: pageNum,
-          limit: limitNum,
-          totalPages: Math.ceil(total / limitNum)
-        }
-      }
-    });
-
-  } catch (err) {
-    next(err);
   }
+});
 
+} catch (err) {
+next(err);
+}
 };
 
-
-// ─────────────────────────────────────────────────────────────
-// GET /files/:id
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+GET /files/:id
+───────────────────────────────────────────── */
 const getFileById = async (req, res, next) => {
+try {
 
-  try {
 
-    const file = await File.findById(req.params.id)
-      .populate('uploadedBy', 'name email')
-      .populate('approvedBy', 'name email');
+const file = await File.findById(req.params.id)
+  .populate('uploadedBy', 'name email')
+  .populate('approvedBy', 'name email');
 
-    if (!file) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found'
-      });
-    }
+if (!file) {
+  return res.status(404).json({
+    success: false,
+    message: 'File not found'
+  });
+}
 
-    if (req.user.role === 'student' && file.status !== 'approved') {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found'
-      });
-    }
+if (req.user.role === 'student' && file.status !== 'approved') {
+  return res.status(404).json({
+    success: false,
+    message: 'File not found'
+  });
+}
 
-    res.json({
-      success: true,
-      data: { file }
-    });
+res.json({
+  success: true,
+  data: { file }
+});
 
-  } catch (err) {
-    next(err);
-  }
 
+} catch (err) {
+next(err);
+}
 };
 
-
-// ─────────────────────────────────────────────────────────────
-// PREVIEW FILE (Cloudinary URL redirect)
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+PREVIEW FILE
+───────────────────────────────────────────── */
 const previewFile = async (req, res, next) => {
-  try {
+try {
 
-    const file = await File.findById(req.params.id);
 
-    if (!file) {
-      return res.status(404).json({
-        success: false,
-        message: "File not found"
-      });
-    }
+const file = await File.findById(req.params.id);
 
-    return res.redirect(file.filePath);
+if (!file) {
+  return res.status(404).json({
+    success: false,
+    message: 'File not found'
+  });
+}
 
-  } catch (err) {
-    next(err);
-  }
+if (req.user.role === 'student' && file.status !== 'approved') {
+  return res.status(403).json({
+    success: false,
+    message: 'File not accessible'
+  });
+}
+
+if (!file.filePath) {
+  return res.status(404).json({
+    success: false,
+    message: 'File URL missing'
+  });
+}
+
+return res.redirect(file.filePath);
+
+
+} catch (err) {
+next(err);
+}
 };
 
-// ─────────────────────────────────────────────────────────────
-// DOWNLOAD FILE
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+DOWNLOAD FILE
+───────────────────────────────────────────── */
 const downloadFile = async (req, res, next) => {
-  try {
+try {
 
-    const file = await File.findById(req.params.id);
+const file = await File.findById(req.params.id);
 
-    if (!file) {
-      return res.status(404).json({
-        success: false,
-        message: "File not found"
-      });
-    }
+if (!file) {
+  return res.status(404).json({
+    success: false,
+    message: 'File not found'
+  });
+}
 
-    if (req.user.role === "student" && file.status !== "approved") {
-      return res.status(403).json({
-        success: false,
-        message: "File not accessible"
-      });
-    }
+if (req.user.role === 'student' && file.status !== 'approved') {
+  return res.status(403).json({
+    success: false,
+    message: 'File not accessible'
+  });
+}
 
-    // Force download via Cloudinary fl_attachment flag
-    let downloadUrl = file.filePath;
-    if (downloadUrl && downloadUrl.includes('cloudinary.com')) {
-      const encodedName = encodeURIComponent(file.originalName || file.fileName || 'file');
-      downloadUrl = downloadUrl.replace('/upload/', `/upload/fl_attachment:${encodedName}/`);
-    }
+if (!file.filePath) {
+  return res.status(404).json({
+    success: false,
+    message: 'File URL missing'
+  });
+}
 
-    File.findByIdAndUpdate(req.params.id, { $inc: { downloadCount: 1 } }).exec();
-    logger.info(`Download: ${file.originalName} by ${req.user.email}`);
+let downloadUrl = file.filePath;
 
-    return res.redirect(downloadUrl);
+if (downloadUrl.includes('cloudinary.com')) {
 
-  } catch (err) {
-    next(err);
+  const encodedName = encodeURIComponent(file.originalName || 'file');
+
+  if (downloadUrl.includes('/upload/')) {
+    downloadUrl = downloadUrl.replace(
+      '/upload/',
+      `/upload/fl_attachment:${encodedName}/`
+    );
   }
+
+  if (downloadUrl.includes('/raw/upload/')) {
+    downloadUrl = downloadUrl.replace(
+      '/raw/upload/',
+      `/raw/upload/fl_attachment:${encodedName}/`
+    );
+  }
+
+}
+
+File.findByIdAndUpdate(
+  req.params.id,
+  { $inc: { downloadCount: 1 } }
+).exec();
+
+logger.info(`Download: ${file.originalName} by ${req.user.email}`);
+
+return res.redirect(downloadUrl);
+
+
+} catch (err) {
+next(err);
+}
 };
 
-// ─────────────────────────────────────────────────────────────
-// ADMIN — PENDING FILES
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+ADMIN — PENDING FILES
+───────────────────────────────────────────── */
 const getPendingFiles = async (req, res, next) => {
+try {
 
-  try {
+const files = await File.find({ status: 'pending' })
+  .populate('uploadedBy', 'name email')
+  .sort({ uploadedAt: 1 });
 
-    const files = await File.find({ status: 'pending' })
-      .populate('uploadedBy', 'name email')
-      .sort({ uploadedAt: 1 });
+res.json({
+  success: true,
+  data: { files }
+});
 
-    res.json({
-      success: true,
-      data: { files }
-    });
 
-  } catch (err) {
-    next(err);
-  }
-
+} catch (err) {
+next(err);
+}
 };
 
-
-// ─────────────────────────────────────────────────────────────
-// APPROVE FILE
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+APPROVE FILE
+───────────────────────────────────────────── */
 const approveFile = async (req, res, next) => {
+try {
 
-  try {
 
-    const file = await File.findById(req.params.id);
+const file = await File.findById(req.params.id);
 
-    if (!file) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found'
-      });
-    }
+if (!file) {
+  return res.status(404).json({
+    success: false,
+    message: 'File not found'
+  });
+}
 
-    file.status = 'approved';
-    file.approvedBy = req.user._id;
-    file.approvedAt = new Date();
+file.status = 'approved';
+file.approvedBy = req.user._id;
+file.approvedAt = new Date();
 
-    await file.save();
+await file.save();
 
-    res.json({
-      success: true,
-      message: 'File approved'
-    });
+res.json({
+  success: true,
+  message: 'File approved'
+});
 
-  } catch (err) {
-    next(err);
-  }
 
+} catch (err) {
+next(err);
+}
 };
 
-
-// ─────────────────────────────────────────────────────────────
-// REJECT FILE
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+REJECT FILE
+───────────────────────────────────────────── */
 const rejectFile = async (req, res, next) => {
+try {
 
-  try {
 
-    const file = await File.findById(req.params.id);
+const file = await File.findById(req.params.id);
 
-    if (!file) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found'
-      });
-    }
+if (!file) {
+  return res.status(404).json({
+    success: false,
+    message: 'File not found'
+  });
+}
 
-    file.status = 'rejected';
-    file.rejectionNote = req.body.note || 'No reason provided';
-    file.approvedBy = req.user._id;
-    file.approvedAt = new Date();
+file.status = 'rejected';
+file.rejectionNote = req.body.note || 'No reason provided';
+file.approvedBy = req.user._id;
+file.approvedAt = new Date();
 
-    await file.save();
+await file.save();
 
-    res.json({
-      success: true,
-      message: 'File rejected'
-    });
+res.json({
+  success: true,
+  message: 'File rejected'
+});
 
-  } catch (err) {
-    next(err);
-  }
 
+} catch (err) {
+next(err);
+}
 };
 
-
-// ─────────────────────────────────────────────────────────────
-// DELETE FILE
-// ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────
+DELETE FILE
+───────────────────────────────────────────── */
 const deleteFile = async (req, res, next) => {
+try {
 
-  try {
 
-    const file = await File.findById(req.params.id);
+const file = await File.findById(req.params.id);
 
-    if (!file) {
-      return res.status(404).json({
-        success: false,
-        message: 'File not found'
-      });
-    }
+if (!file) {
+  return res.status(404).json({
+    success: false,
+    message: 'File not found'
+  });
+}
 
-    await Report.deleteMany({ fileId: file._id });
+await Report.deleteMany({ fileId: file._id });
 
-    await file.deleteOne();
+await file.deleteOne();
 
-    logger.info(`Deleted file ${file.originalName}`);
+logger.info(`Deleted file ${file.originalName}`);
 
-    res.json({
-      success: true,
-      message: 'File deleted successfully'
-    });
+res.json({
+  success: true,
+  message: 'File deleted successfully'
+});
 
-  } catch (err) {
-    next(err);
-  }
 
+} catch (err) {
+next(err);
+}
 };
-
 
 module.exports = {
-  uploadFile,
-  getFiles,
-  getFileById,
-  previewFile,
-  downloadFile,
-  getPendingFiles,
-  approveFile,
-  rejectFile,
-  deleteFile
+uploadFile,
+getFiles,
+getFileById,
+previewFile,
+downloadFile,
+getPendingFiles,
+approveFile,
+rejectFile,
+deleteFile
 };
