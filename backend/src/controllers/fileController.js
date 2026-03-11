@@ -180,15 +180,7 @@ const previewFile = async (req, res, next) => {
       });
     }
 
-    if (req.user.role === "student" && file.status !== "approved") {
-      return res.status(403).json({
-        success: false,
-        message: "File not accessible"
-      });
-    }
-
-    // Redirect to Cloudinary URL — browser previews inline
-    return res.redirect(file.fileUrl);
+    return res.redirect(file.filePath);
 
   } catch (err) {
     next(err);
@@ -218,7 +210,7 @@ const downloadFile = async (req, res, next) => {
     }
 
     // Force download via Cloudinary fl_attachment flag
-    let downloadUrl = file.fileUrl;
+    let downloadUrl = file.filePath;
     if (downloadUrl && downloadUrl.includes('cloudinary.com')) {
       const encodedName = encodeURIComponent(file.originalName || file.fileName || 'file');
       downloadUrl = downloadUrl.replace('/upload/', `/upload/fl_attachment:${encodedName}/`);
