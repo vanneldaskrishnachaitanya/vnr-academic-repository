@@ -163,38 +163,32 @@ next(err);
 PREVIEW FILE
 ───────────────────────────────────────────── */
 const previewFile = async (req, res, next) => {
-try {
+  try {
 
+    const file = await File.findById(req.params.id);
 
-const file = await File.findById(req.params.id);
+    if (!file) {
+      return res.status(404).json({
+        success: false,
+        message: 'File not found'
+      });
+    }
 
-if (!file) {
-  return res.status(404).json({
-    success: false,
-    message: 'File not found'
-  });
-}
+    if (req.user.role === 'student' && file.status !== 'approved') {
+      return res.status(403).json({
+        success: false,
+        message: 'File not accessible'
+      });
+    }
 
-if (req.user.role === 'student' && file.status !== 'approved') {
-  return res.status(403).json({
-    success: false,
-    message: 'File not accessible'
-  });
-}
+    return res.json({
+      success: true,
+      url: file.filePath
+    });
 
-if (!file.filePath) {
-  return res.status(404).json({
-    success: false,
-    message: 'File URL missing'
-  });
-}
-
-return res.redirect(file.filePath);
-
-
-} catch (err) {
-next(err);
-}
+  } catch (err) {
+    next(err);
+  }
 };
 
 /* ─────────────────────────────────────────────
