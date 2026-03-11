@@ -30,28 +30,25 @@ Cloudinary Storage
 ───────────────────────────────────────────── */
 
 const storage = new CloudinaryStorage({
-cloudinary,
-params: async (req, file) => {
+  cloudinary,
+  params: async (req, file) => {
 
+    const { regulation, branch, subject } = req.body;
 
-const { regulation, branch, subject } = req.body;
+    const nameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
 
-// remove extension from original filename
-const nameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
+    let resourceType = "auto";
 
-let resourceType = "auto";
+    if (file.mimetype === "application/pdf") {
+      resourceType = "raw";
+    }
 
-if (file.mimetype === "application/pdf") {
-  resourceType = "raw";
-}
-
-return {
-  folder: `vnr_repository/${regulation || "misc"}/${branch || "misc"}/${subject || "misc"}`,
-  resource_type: resourceType,
-  public_id: `${Date.now()}-${nameWithoutExt}`
-};
-
-}
+    return {
+      folder: `vnr_repository/${regulation || "misc"}/${branch || "misc"}/${subject || "misc"}`,
+      resource_type: resourceType,
+      public_id: `${Date.now()}-${nameWithoutExt}`
+    };
+  }
 });
 
 /* ─────────────────────────────────────────────
