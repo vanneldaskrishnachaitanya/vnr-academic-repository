@@ -39,12 +39,17 @@ const { regulation, branch, subject } = req.body;
 // remove extension from original filename
 const nameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
 
+let resourceType = "auto";
+
+if (file.mimetype === "application/pdf") {
+  resourceType = "raw";
+}
+
 return {
   folder: `vnr_repository/${regulation || "misc"}/${branch || "misc"}/${subject || "misc"}`,
-  resource_type: "auto",   // IMPORTANT: allows PDF preview
+  resource_type: resourceType,
   public_id: `${Date.now()}-${nameWithoutExt}`
 };
-
 
 }
 });
