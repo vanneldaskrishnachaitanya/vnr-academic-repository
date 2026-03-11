@@ -1,4 +1,4 @@
-# VNR Academic Repository
+  # ExamVault
 
 A web platform for students to upload, preview, and download academic materials.
 
