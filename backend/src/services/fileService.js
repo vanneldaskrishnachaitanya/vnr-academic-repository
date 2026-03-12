@@ -8,21 +8,21 @@ const logger = require('../utils/logger');
 const { buildDuplicateFilter } = require('../utils/fileHelpers');
 
 const ALLOWED_MIMETYPES = new Set([
-'application/pdf',
-'application/msword',
-'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-'application/vnd.ms-powerpoint',
-'application/vnd.openxmlformats-officedocument.presentationml.presentation',
-'application/vnd.ms-excel',
-'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
-'image/png',
-'image/jpeg',
-'image/gif',
-'image/webp',
-'image/svg+xml',
-'text/plain',
-'application/zip',
-'application/x-zip-compressed',
+  'application/pdf',
+  'application/msword',
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+  'application/vnd.ms-powerpoint',
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation',
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'image/png',
+  'image/jpeg',
+  'image/gif',
+  'image/webp',
+  'image/svg+xml',
+  'text/plain',
+  'application/zip',
+  'application/x-zip-compressed'
 ]);
 
 /* ─────────────────────────────────────────────
@@ -30,27 +30,28 @@ Cloudinary Storage
 ───────────────────────────────────────────── */
 
 const storage = new CloudinaryStorage({
-cloudinary,
-params: async (req, file) => {
+  cloudinary,
+  params: async (req, file) => {
 
-const { regulation, branch, subject } = req.body;
+    const { regulation, branch, subject } = req.body;
 
-const nameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
-const ext = file.originalname.split('.').pop();
+    const nameWithoutExt = file.originalname.replace(/\.[^/.]+$/, "");
 
-let resourceType = "auto";
+    let resourceType = "auto";
 
-if (file.mimetype === "application/pdf") {
-  resourceType = "raw";
-}
+    if (file.mimetype === "application/pdf") {
+      resourceType = "raw";
+    }
 
-return {
-  folder: `vnr_repository/${regulation || "misc"}/${branch || "misc"}/${subject || "misc"}`,
-  resource_type: resourceType,
-  public_id: `${Date.now()}-${nameWithoutExt}.${ext}`
-};
+    return {
+      folder: `vnr_repository/${regulation || "misc"}/${branch || "misc"}/${subject || "misc"}`,
+      resource_type: resourceType,
 
-}
+      // ❗ DO NOT include extension here
+      public_id: `${Date.now()}-${nameWithoutExt}`
+    };
+
+  }
 });
 
 /* ─────────────────────────────────────────────
@@ -59,23 +60,23 @@ File filter
 
 const fileFilter = (_req, file, cb) => {
 
-if (ALLOWED_MIMETYPES.has(file.mimetype)) {
-cb(null, true);
-} else {
-cb(Object.assign(
-new Error(`File type '${file.mimetype}' is not permitted.`),
-{ statusCode: 415 }
-));
-}
+  if (ALLOWED_MIMETYPES.has(file.mimetype)) {
+    cb(null, true);
+  } else {
+    cb(Object.assign(
+      new Error(`File type '${file.mimetype}' is not permitted.`),
+      { statusCode: 415 }
+    ));
+  }
 
 };
 
 const MAX_BYTES = (parseInt(process.env.MAX_FILE_SIZE_MB, 10) || 25) * 1024 * 1024;
 
 const upload = multer({
-storage,
-fileFilter,
-limits: { fileSize: MAX_BYTES }
+  storage,
+  fileFilter,
+  limits: { fileSize: MAX_BYTES }
 });
 
 /* ─────────────────────────────────────────────
@@ -83,24 +84,24 @@ Duplicate check
 ───────────────────────────────────────────── */
 
 const checkDuplicate = async ({
-regulation,
-branch,
-subject,
-category,
-examType,
-originalName
+  regulation,
+  branch,
+  subject,
+  category,
+  examType,
+  originalName
 }) => {
 
-const filter = buildDuplicateFilter({
-regulation,
-branch,
-subject,
-category,
-examType,
-originalName
-});
+  const filter = buildDuplicateFilter({
+    regulation,
+    branch,
+    subject,
+    category,
+    examType,
+    originalName
+  });
 
-return File.findOne(filter).lean();
+  return File.findOne(filter).lean();
 
 };
 
@@ -110,47 +111,47 @@ Save metadata
 
 const saveFileMeta = async ({ multerFile, body, userId }) => {
 
-const {
-regulation,
-branch,
-subject,
-category,
-examType,
-year
-} = body;
+  const {
+    regulation,
+    branch,
+    subject,
+    category,
+    examType,
+    year
+  } = body;
 
-const doc = await File.create({
+  const doc = await File.create({
 
-regulation: regulation.toUpperCase(),
-branch: branch.toUpperCase(),
-subject: subject.trim(),
+    regulation: regulation.toUpperCase(),
+    branch: branch.toUpperCase(),
+    subject: subject.trim(),
 
-category,
-examType: category === 'paper' ? (examType || null) : null,
+    category,
+    examType: category === 'paper' ? (examType || null) : null,
 
-year: year ? parseInt(year, 10) : null,
+    year: year ? parseInt(year, 10) : null,
 
-originalName: multerFile.originalname,
+    originalName: multerFile.originalname,
 
-storedName: multerFile.filename || multerFile.public_id,
+    storedName: multerFile.filename || multerFile.public_id,
 
-filePath: multerFile.path,
+    filePath: multerFile.path,
 
-mimeType: multerFile.mimetype,
+    mimeType: multerFile.mimetype,
 
-fileSize: multerFile.size,
+    fileSize: multerFile.size,
 
-uploadedBy: userId,
+    uploadedBy: userId,
 
-status: 'pending',
+    status: 'pending',
 
-uploadedAt: new Date(),
+    uploadedAt: new Date(),
 
-});
+  });
 
-logger.info(`Metadata saved: ${doc.originalName} [${doc._id}]`);
+  logger.info(`Metadata saved: ${doc.originalName} [${doc._id}]`);
 
-return doc;
+  return doc;
 
 };
 
@@ -159,30 +160,30 @@ Build query filter
 ───────────────────────────────────────────── */
 
 const buildFileFilter = ({
-regulation,
-branch,
-subject,
-category,
-examType,
-year
+  regulation,
+  branch,
+  subject,
+  category,
+  examType,
+  year
 }) => {
 
-const filter = {};
+  const filter = {};
 
-if (regulation) filter.regulation = regulation.toUpperCase();
-if (branch) filter.branch = branch.toUpperCase();
-if (subject) filter.subject = new RegExp(subject.trim(), 'i');
-if (category) filter.category = category;
-if (examType) filter.examType = examType;
-if (year) filter.year = parseInt(year, 10);
+  if (regulation) filter.regulation = regulation.toUpperCase();
+  if (branch) filter.branch = branch.toUpperCase();
+  if (subject) filter.subject = new RegExp(subject.trim(), 'i');
+  if (category) filter.category = category;
+  if (examType) filter.examType = examType;
+  if (year) filter.year = parseInt(year, 10);
 
-return filter;
+  return filter;
 
 };
 
 module.exports = {
-upload,
-checkDuplicate,
-saveFileMeta,
-buildFileFilter
+  upload,
+  checkDuplicate,
+  saveFileMeta,
+  buildFileFilter
 };
