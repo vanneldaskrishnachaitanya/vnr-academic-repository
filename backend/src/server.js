@@ -20,10 +20,9 @@ const { adminRouter }       = require('./routes/fileRoutes');
 const reportRoutes          = require('./routes/reportRoutes');
 const { adminReportRouter } = require('./routes/reportRoutes');
 const folderRoutes          = require('./routes/folderRoutes');
-app.set('trust proxy', 1);
 // ── App setup ─────────────────────────────────────────────────
 const app = express();
-
+app.set('trust proxy', 1);
 // Security headers
 app.use(helmet());
 
