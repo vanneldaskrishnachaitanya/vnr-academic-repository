@@ -1,49 +1,27 @@
+// src/components/FileCard.jsx
 import {
-  Download,
-  Eye,
-  FileText,
-  Flag,
-  Image,
-  Presentation,
-  FileSpreadsheet,
-  Calendar,
-  User,
-  Clock,
-  TrendingDown,
-  CheckCircle,
-  AlertCircle,
-  Timer,
-  Trash2
+  Download, Eye, FileText, Flag, Image,
+  Presentation, FileSpreadsheet, Calendar,
+  User, Clock, TrendingDown, CheckCircle,
+  AlertCircle, Timer, Trash2
 } from "lucide-react";
 
-import api, { getPreviewUrl, getDownloadUrl } from "../api/apiClient";
+import api from "../api/apiClient";
 import { useAuth } from "../hooks/useAuth";
 
-/* ───────────────── MIME CONFIG ───────────────── */
-
 const MIME_CONFIG = {
-  "application/pdf": { icon: <FileText size={22} />, label: "PDF", color: "file-icon--pdf" },
-  "image/png": { icon: <Image size={22} />, label: "Image", color: "file-icon--img" },
-  "image/jpeg": { icon: <Image size={22} />, label: "Image", color: "file-icon--img" },
-  "image/webp": { icon: <Image size={22} />, label: "Image", color: "file-icon--img" },
-  "application/vnd.ms-powerpoint": { icon: <Presentation size={22} />, label: "PPT", color: "file-icon--ppt" },
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": {
-    icon: <Presentation size={22} />,
-    label: "PPTX",
-    color: "file-icon--ppt"
-  },
-  "application/vnd.ms-excel": { icon: <FileSpreadsheet size={22} />, label: "XLS", color: "file-icon--xls" },
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": {
-    icon: <FileSpreadsheet size={22} />,
-    label: "XLSX",
-    color: "file-icon--xls"
-  }
+  "application/pdf": { icon: <FileText size={22} />, label: "PDF",   color: "file-icon--pdf" },
+  "image/png":       { icon: <Image size={22} />,    label: "Image", color: "file-icon--img" },
+  "image/jpeg":      { icon: <Image size={22} />,    label: "Image", color: "file-icon--img" },
+  "image/webp":      { icon: <Image size={22} />,    label: "Image", color: "file-icon--img" },
+  "application/vnd.ms-powerpoint": { icon: <Presentation size={22} />, label: "PPT",  color: "file-icon--ppt" },
+  "application/vnd.openxmlformats-officedocument.presentationml.presentation": { icon: <Presentation size={22} />, label: "PPTX", color: "file-icon--ppt" },
+  "application/vnd.ms-excel": { icon: <FileSpreadsheet size={22} />, label: "XLS",  color: "file-icon--xls" },
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { icon: <FileSpreadsheet size={22} />, label: "XLSX", color: "file-icon--xls" },
 };
 
 const getMimeConfig = (mime) =>
   MIME_CONFIG[mime] || { icon: <FileText size={22} />, label: "FILE", color: "file-icon--default" };
-
-/* ───────────────── HELPERS ───────────────── */
 
 const formatBytes = (bytes) => {
   if (!bytes) return "";
@@ -55,31 +33,52 @@ const formatBytes = (bytes) => {
 const formatDate = (date) => {
   if (!date) return "";
   return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit",
-    month: "short",
-    year: "numeric"
+    day: "2-digit", month: "short", year: "numeric"
   });
 };
-
-/* ───────────────── STATUS DOT ───────────────── */
 
 const StatusDot = ({ status }) => {
   const config = {
     approved: { icon: <CheckCircle size={11} />, cls: "status--approved", label: "Approved" },
-    pending: { icon: <Timer size={11} />, cls: "status--pending", label: "Pending" },
-    rejected: { icon: <AlertCircle size={11} />, cls: "status--rejected", label: "Rejected" }
+    pending:  { icon: <Timer size={11} />,       cls: "status--pending",  label: "Pending"  },
+    rejected: { icon: <AlertCircle size={11} />, cls: "status--rejected", label: "Rejected" },
   };
-
   const { icon, cls, label } = config[status] || config.pending;
-
-  return (
-    <span className={`fc-status ${cls}`}>
-      {icon}
-      {label} </span>
-  );
+  return <span className={`fc-status ${cls}`}>{icon}{label}</span>;
 };
 
-/* ───────────────── COMPONENT ───────────────── */
+// ── Cloudinary URL helpers ────────────────────────────────────
+const getPreviewUrl = (filePath, mimeType) => {
+  if (!filePath) return null;
+
+  // Images — open directly, browser previews natively
+  if (mimeType?.startsWith("image/")) {
+    return filePath;
+  }
+
+  // PDFs stored as raw in Cloudinary — use Google Docs viewer for preview
+  if (mimeType === "application/pdf") {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(filePath)}&embedded=false`;
+  }
+
+  // Office files — use Google Docs viewer
+  if (
+    mimeType?.includes("word") ||
+    mimeType?.includes("powerpoint") ||
+    mimeType?.includes("excel") ||
+    mimeType?.includes("presentation") ||
+    mimeType?.includes("spreadsheet")
+  ) {
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(filePath)}&embedded=false`;
+  }
+
+  return filePath;
+};
+
+const getDownloadUrl = (filePath) => {
+  // Just use the raw Cloudinary URL — browser will download it
+  return filePath;
+};
 
 export default function FileCard({ file, showStatus = false, onReport, compact = false }) {
 
@@ -90,7 +89,12 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
 
   const canPreview =
     file.mimeType === "application/pdf" ||
-    file.mimeType?.startsWith("image/");
+    file.mimeType?.startsWith("image/") ||
+    file.mimeType?.includes("word") ||
+    file.mimeType?.includes("powerpoint") ||
+    file.mimeType?.includes("presentation") ||
+    file.mimeType?.includes("spreadsheet") ||
+    file.mimeType?.includes("excel");
 
   const uploaderName =
     file.uploadedBy?.name ||
@@ -100,40 +104,30 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
   const dateStr = formatDate(file.uploadedAt || file.createdAt);
 
   /* ───────── PREVIEW ───────── */
-
   const handlePreview = () => {
-    if (!file.filePath) {
-      alert("Preview unavailable");
-      return;
-    }
-  
-    window.open(file.filePath, "_blank");
+    const url = getPreviewUrl(file.filePath, file.mimeType);
+    if (!url) return alert("Preview not available for this file.");
+    window.open(url, "_blank");
   };
 
   /* ───────── DOWNLOAD ───────── */
-
   const handleDownload = () => {
+    const url = getDownloadUrl(file.filePath);
+    if (!url) return alert("Download not available.");
 
-    if (!file.filePath) {
-      alert("Download unavailable");
-      return;
-    }
-  
+    // Create a hidden link and click it to trigger download
     const link = document.createElement("a");
-    link.href = file.filePath;
-    link.download = file.originalName || "file";
-  
+    link.href = url;
+    link.target = "_blank";
+    link.rel = "noopener noreferrer";
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
-  
   };
 
   /* ───────── DELETE (ADMIN) ───────── */
-
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${file.originalName}" ?`)) return;
-
     try {
       await api.delete(`/admin/files/${file._id}`);
       window.location.reload();
@@ -141,15 +135,10 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
       console.error(err);
       alert("Delete failed");
     }
-
-
   };
-
-  /* ───────────────── UI ───────────────── */
 
   return (
     <article className={`file-card ${compact ? "file-card--compact" : ""}`}>
-
 
       <div className={`file-card__icon ${mime.color}`}>
         {mime.icon}
@@ -157,7 +146,6 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
       </div>
 
       <div className="file-card__info">
-
         <div className="file-card__title-row">
           <h3 className="file-card__name" title={file.originalName}>
             {file.originalName}
@@ -166,41 +154,31 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
         </div>
 
         <div className="file-card__meta">
-
           <span className="file-card__chip">
             <User size={11} /> {uploaderName}
           </span>
-
           {dateStr && (
             <span className="file-card__chip">
               <Calendar size={11} /> {dateStr}
             </span>
           )}
-
           {file.fileSize > 0 && (
-            <span className="file-card__chip">
-              {formatBytes(file.fileSize)}
-            </span>
+            <span className="file-card__chip">{formatBytes(file.fileSize)}</span>
           )}
-
           {file.downloadCount > 0 && (
             <span className="file-card__chip">
               <TrendingDown size={11} /> {file.downloadCount}
             </span>
           )}
-
           {file.year && (
             <span className="file-card__chip">
               <Clock size={11} /> {file.year}
             </span>
           )}
-
         </div>
-
       </div>
 
       <div className="file-card__actions">
-
         {canPreview && (
           <button className="fc-btn fc-btn--preview" onClick={handlePreview}>
             <Eye size={14} />
@@ -225,10 +203,8 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
             <Flag size={13} />
           </button>
         )}
-
       </div>
 
     </article>
-
   );
 }
