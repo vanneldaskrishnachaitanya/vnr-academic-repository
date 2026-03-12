@@ -1,6 +1,6 @@
 'use strict';
 
-const Folder = require('../models/folder');
+const Folder = require('../models/Folder');
 
 const getFolders = async (req, res) => {
 
