@@ -83,17 +83,6 @@ router.get(
   downloadFile
 );
 
-/**
- * GET /files/:id
- */
-router.get(
-  '/:id',
-  protect,
-  restrictTo('student', 'admin'),
-  mongoIdParam('id'),
-  validate,
-  getFileById
-);
 
 
 /**
@@ -115,6 +104,19 @@ router.post(
   restrictTo('student', 'admin'),
   createFolder
 );
+
+/**
+ * GET /files/:id
+ */
+router.get(
+  '/:id',
+  protect,
+  restrictTo('student', 'admin'),
+  mongoIdParam('id'),
+  validate,
+  getFileById
+);
+
 
 module.exports = router;
 
