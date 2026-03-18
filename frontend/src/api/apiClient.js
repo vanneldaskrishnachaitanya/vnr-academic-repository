@@ -2,7 +2,7 @@
 import axios from 'axios';
 import { auth } from '../auth/firebase';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://vnr-academic-repository-1.onrender.com';
+const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'https://examvault-miqe.onrender.com';
 console.log("API BASE URL:", BASE_URL);
 const api = axios.create({
   baseURL: BASE_URL,
@@ -10,13 +10,13 @@ const api = axios.create({
   headers: { 'Content-Type': 'application/json' },
 });
 export const fetchFolders = (params) =>
-  api.get('/files/folders', { params }).then(r => r.data.data);
+  api.get('/folders', { params }).then(r => r.data);
 
 export const createFolder = (data) =>
-  api.post('/files/folders', data).then(r => r.data.data);
+  api.post('/folders', data).then(r => r.data);
 
 export const deleteFolder = (id) =>
-  api.delete(`/admin/folders/${id}`).then(r => r.data);
+  api.delete(`/folders/${id}`).then(r => r.data);
 // Attach Firebase ID token to every request
 api.interceptors.request.use(async (config) => {
   const user = auth.currentUser;
