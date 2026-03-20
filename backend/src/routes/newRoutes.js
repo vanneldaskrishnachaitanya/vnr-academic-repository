@@ -11,6 +11,7 @@ const { getAnalytics } = require('../controllers/analyticsController');
 const { getFileRatings, rateFile, deleteRating } = require('../controllers/ratingController');
 const { getDownloadHistory, recordDownloadFromFrontend, globalSearch, getAllUsers, toggleUserActive } = require('../controllers/extraController');
 const { getExams, createExam, deleteExam } = require('../controllers/examController');
+const { getLeaderboard, getUploadProgress, exportFiles, exportUsers, exportDownloads } = require('../controllers/leaderboardController');
 const {
   getCodingItems, getAllCodingItems, createCodingItem, deleteCodingItem,
   toggleCodingItem, suggestPlatform, getSuggestions, reviewSuggestion,
@@ -84,6 +85,19 @@ examRouter.get('/',       protect, getExams);
 examRouter.post('/',      protect, restrictTo('admin'), createExam);
 examRouter.delete('/:id', protect, restrictTo('admin'), deleteExam);
 
+// Leaderboard
+const leaderboardRouter = express.Router();
+leaderboardRouter.get('/', protect, getLeaderboard);
+
+// Upload progress
+const progressRouter = express.Router();
+progressRouter.get('/', protect, getUploadProgress);
+
+// Admin export CSV
+adminExtrasRouter.get('/export/files',     protect, restrictTo('admin'), exportFiles);
+adminExtrasRouter.get('/export/users',     protect, restrictTo('admin'), exportUsers);
+adminExtrasRouter.get('/export/downloads', protect, restrictTo('admin'), exportDownloads);
+
 module.exports = {
   notificationRouter,
   announcementRouter,
@@ -95,4 +109,6 @@ module.exports = {
   branchRouter,
   examRouter,
   codingRouter,
+  leaderboardRouter,
+  progressRouter,
 };

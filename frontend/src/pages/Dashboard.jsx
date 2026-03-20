@@ -1,3 +1,4 @@
+import RecentlyViewed from '../components/RecentlyViewed';
 // src/pages/Dashboard.jsx
 import { useNavigate } from 'react-router-dom';
 import { ArrowRight, BookOpen, GraduationCap, Layers } from 'lucide-react';
@@ -95,6 +96,7 @@ export default function Dashboard() {
           ))}
         </div>
       </section>
+      <RecentlyViewed />
     </div>
   );
 }

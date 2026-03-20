@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   BookOpen, ChevronDown, LayoutDashboard,
   LogOut, Shield, Bell, Sun, Moon, Check,
-  Trash2, Search, Download, Code, Calendar,
+  Trash2, Search, Download, Code, Calendar, Trophy,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { fetchNotifications, markAllNotificationsRead, deleteNotification } from '../api/apiClient';
@@ -110,6 +110,9 @@ export default function Navbar({ theme, toggleTheme }) {
           </NavLink>
           <NavLink to="/exams" className={({ isActive }) => 'navbar__link' + (isActive ? ' navbar__link--active' : '')}>
             <Calendar size={15} /> Exams
+          </NavLink>
+          <NavLink to="/leaderboard" className={({ isActive }) => 'navbar__link' + (isActive ? ' navbar__link--active' : '')}>
+            <Trophy size={15} /> Leaders
           </NavLink>
           {isAdmin && (
             <NavLink

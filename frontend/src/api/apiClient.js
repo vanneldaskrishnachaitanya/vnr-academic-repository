@@ -107,4 +107,13 @@ export const toggleCodingItem   = async (id) => { const { data } = await api.pat
 export const getCodingSuggestions = async () => { const { data } = await api.get('/admin/coding/suggestions'); return data.data; };
 export const reviewSuggestion   = async (id, action, adminNote='') => { const { data } = await api.patch(`/admin/coding/suggestions/${id}`, { action, adminNote }); return data; };
 
+// ── Leaderboard ──────────────────────────────────────────────
+export const fetchLeaderboard = async () => { const { data } = await api.get('/leaderboard'); return data.data; };
+// ── Upload Progress ───────────────────────────────────────────
+export const fetchUploadProgress = async (params={}) => { const { data } = await api.get('/upload-progress', { params }); return data.data; };
+// ── Export CSV (admin) ────────────────────────────────────────
+export const exportFilesCSV     = () => window.open(api.defaults.baseURL + '/admin/export/files',     '_blank');
+export const exportUsersCSV     = () => window.open(api.defaults.baseURL + '/admin/export/users',     '_blank');
+export const exportDownloadsCSV = () => window.open(api.defaults.baseURL + '/admin/export/downloads', '_blank');
+
 export default api;

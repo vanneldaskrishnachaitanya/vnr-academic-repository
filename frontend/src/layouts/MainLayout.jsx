@@ -1,3 +1,5 @@
+import OnboardingTour from '../components/OnboardingTour';
+import RecentlyViewed from '../components/RecentlyViewed';
 import BottomNav from '../components/BottomNav';
 import { useEffect, useState } from 'react';
 import { Outlet } from 'react-router-dom';
@@ -15,6 +17,7 @@ const TYPE_STYLES = {
 export default function MainLayout() {
   const [theme, setTheme] = useState(() => localStorage.getItem('ev-theme') || 'dark');
   const [announcements, setAnnouncements] = useState([]);
+  const [showTour, setShowTour] = useState(() => !localStorage.getItem('ev-tour-done'));
   const [dismissed, setDismissed] = useState([]);
   const [installPrompt, setInstallPrompt] = useState(null);
   const [showInstall, setShowInstall] = useState(false);
@@ -54,6 +57,7 @@ export default function MainLayout() {
       <Navbar theme={theme} toggleTheme={toggleTheme} />
 
       {/* Announcement banners */}
+      {showTour && <OnboardingTour onDone={() => { setShowTour(false); localStorage.setItem('ev-tour-done','1'); }} />}
       {visible.map(ann => {
         const s = TYPE_STYLES[ann.type] || TYPE_STYLES.info;
         return (

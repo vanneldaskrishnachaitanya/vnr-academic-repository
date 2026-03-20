@@ -73,9 +73,12 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
   const uploaderName = file.uploadedBy?.name || file.uploadedBy?.email?.split('@')[0] || 'Unknown';
   const dateStr = formatDate(file.uploadedAt || file.createdAt);
 
+  const isPdf = file.mimeType === 'application/pdf';
+
   const getPreviewUrl = () => {
     if (!file.filePath) return null;
     if (file.mimeType?.startsWith('image/')) return file.filePath;
+    if (isPdf) return `https://mozilla.github.io/pdf.js/web/viewer.html?file=${encodeURIComponent(file.filePath)}`;
     return `https://docs.google.com/viewer?url=${encodeURIComponent(file.filePath)}&embedded=true`;
   };
 

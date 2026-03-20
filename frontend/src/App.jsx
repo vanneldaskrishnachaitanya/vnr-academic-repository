@@ -13,6 +13,8 @@ import AnalyticsPage        from './pages/AnalyticsPage';
 import GlobalSearchPage     from './pages/GlobalSearchPage';
 import DownloadHistoryPage  from './pages/DownloadHistoryPage';
 import UserManagementPage   from './pages/UserManagementPage';
+import LeaderboardPage      from './pages/LeaderboardPage';
+import UploadProgressPage   from './pages/UploadProgressPage';
 import CodingPage           from './pages/CodingPage';
 import ExamSchedulePage     from './pages/ExamSchedulePage';
 
@@ -82,6 +84,8 @@ export default function App() {
         <Route path="/downloads"                          element={<DownloadHistoryPage />} />
         <Route path="/coding"                             element={<CodingPage />} />
         <Route path="/exams"                              element={<ExamSchedulePage />} />
+        <Route path="/leaderboard"                        element={<LeaderboardPage />} />
+        <Route path="/progress"                           element={<UploadProgressPage />} />
       </Route>
 
       {/* ── Admin (protected + role check) ─────────────────── */}

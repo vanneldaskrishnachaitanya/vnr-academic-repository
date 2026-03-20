@@ -10,6 +10,7 @@ import {
   fetchAnnouncements, createAnnouncement, deleteAnnouncement,
   fetchAllUsers, toggleUserActive,
   fetchAllBranches, createBranch, updateBranch, deleteBranch,
+  exportFilesCSV, exportUsersCSV, exportDownloadsCSV,
 } from '../api/apiClient';
 import FileCard from '../components/FileCard';
 import { useNavigate } from 'react-router-dom';
@@ -240,6 +241,9 @@ export default function AdminPanel() {
     <div className="admin-panel">
       <div className="admin-panel__header">
         <h1 className="admin-panel__title"><Shield size={24} /> Admin Panel</h1>
+        <button className="btn btn--ghost btn--sm" title="Export files CSV" onClick={exportFilesCSV}>📥 Files CSV</button>
+        <button className="btn btn--ghost btn--sm" title="Export users CSV" onClick={exportUsersCSV}>📥 Users CSV</button>
+        <button className="btn btn--ghost btn--sm" title="Export downloads CSV" onClick={exportDownloadsCSV}>📥 Downloads</button>
         <button className="btn btn--ghost btn--sm" onClick={() => navigate('/admin/analytics')}>
           <BarChart2 size={14} /> Analytics
         </button>
