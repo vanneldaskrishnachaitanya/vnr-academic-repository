@@ -10,19 +10,12 @@ import {
   fetchFolders,
   createFolder,
   deleteFolder,
+  fetchBranches,
 } from '../api/apiClient';
 
 import { useAuth } from '../hooks/useAuth';
 
-const BRANCHES = [
-  { id: 'CSE',   label: 'Computer Science & Engineering',            emoji: '💻' },
-  { id: 'ECE',   label: 'Electronics & Communication Engineering',   emoji: '📡' },
-  { id: 'EEE',   label: 'Electrical & Electronics Engineering',      emoji: '⚡' },
-  { id: 'IT',    label: 'Information Technology',                    emoji: '🌐' },
-  { id: 'MECH',  label: 'Mechanical Engineering',                    emoji: '⚙️' },
-  { id: 'CIVIL', label: 'Civil Engineering',                         emoji: '🏗️' },
-  { id: 'AIML',  label: 'Artificial Intelligence & Machine Learning', emoji: '🧠' },
-];
+// Branches loaded from API
 
 const YEARS = [
   { id: '1', label: '1st Year', short: 'Y1', desc: 'Foundation' },
@@ -55,6 +48,8 @@ export default function RegulationPage() {
   const { backendUser } = useAuth();
   const isAdmin = backendUser?.role === 'admin';
 
+  const [branches, setBranches] = useState([]);
+  const [branchesLoading, setBranchesLoading] = useState(true);
   const [expandedBranch, setExpandedBranch] = useState(null);
   const [selectedYear, setSelectedYear] = useState({});
   const [selectedSem, setSelectedSem] = useState({});
@@ -66,6 +61,14 @@ export default function RegulationPage() {
   const [search, setSearch] = useState('');
 
   const cacheKey = (branch, year, sem) => `${branch}-${year}-${sem}`;
+
+  // Load branches from API
+  useEffect(() => {
+    fetchBranches()
+      .then(d => setBranches(d.branches || []))
+      .catch(() => {})
+      .finally(() => setBranchesLoading(false));
+  }, []);
 
   const loadFolders = useCallback(async (branch, year, sem) => {
     const key = cacheKey(branch, year, sem);
@@ -139,7 +142,7 @@ export default function RegulationPage() {
   const cancelCreate = () => { setCreating(null); setFolderName(''); setFolderError(''); };
 
   const query = search.trim().toLowerCase();
-  const filtered = BRANCHES.filter(b =>
+  const filtered = branches.filter(b =>
     !query || b.id.toLowerCase().includes(query) || b.label.toLowerCase().includes(query)
   );
 
@@ -172,6 +175,13 @@ export default function RegulationPage() {
           onChange={e => setSearch(e.target.value)}
         />
       </div>
+
+      {branchesLoading ? (
+        <div className="sp-state sp-state--loading" style={{padding:'2rem 0'}}>
+          <Loader2 size={22} className="spin" />
+          <span>Loading branches…</span>
+        </div>
+      ) : null}
 
       <div className="branch-list">
         {filtered.length === 0 && (

@@ -5,7 +5,7 @@ import {
   CheckCircle, AlertCircle, Timer, Trash2, Star, Share2,
   X, Loader2,
 } from 'lucide-react';
-import api, { getFileRatings, rateFile } from '../api/apiClient';
+import api, { getFileRatings, rateFile, recordDownloadApi } from '../api/apiClient';
 import { useAuth } from '../hooks/useAuth';
 import StarRating from './StarRating';
 
@@ -91,7 +91,11 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
       a.href = url; a.download = file.originalName || 'download';
       document.body.appendChild(a); a.click();
       document.body.removeChild(a); window.URL.revokeObjectURL(url);
-    } catch { window.open(file.filePath, '_blank'); }
+      recordDownloadApi(file._id);
+    } catch {
+      window.open(file.filePath, '_blank');
+      recordDownloadApi(file._id);
+    }
   };
 
   const handleShare = () => {

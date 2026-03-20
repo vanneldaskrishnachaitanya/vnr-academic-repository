@@ -11,6 +11,25 @@ const getDownloadHistory = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// Called from frontend after direct Cloudinary download
+const recordDownloadFromFrontend = async (req, res, next) => {
+  try {
+    const file = await File.findById(req.params.fileId).lean();
+    if (!file) return res.json({ success: false });
+    await DownloadHistory.create({
+      userId:     req.user._id,
+      fileId:     file._id,
+      regulation: file.regulation,
+      branch:     file.branch,
+      subject:    file.subject,
+      fileName:   file.originalName,
+    });
+    // Also increment downloadCount
+    File.findByIdAndUpdate(file._id, { $inc: { downloadCount: 1 } }).exec();
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
 const recordDownload = async (userId, file) => {
   try {
     await DownloadHistory.create({ userId, fileId: file._id, regulation: file.regulation, branch: file.branch, subject: file.subject, fileName: file.originalName });
@@ -72,4 +91,4 @@ const toggleUserActive = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getDownloadHistory, recordDownload, globalSearch, getAllUsers, toggleUserActive };
+module.exports = { getDownloadHistory, recordDownload, recordDownloadFromFrontend, globalSearch, getAllUsers, toggleUserActive };

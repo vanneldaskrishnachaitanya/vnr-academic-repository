@@ -163,40 +163,26 @@ export const fetchAnalytics = async () => {
 };
 
 
-// Global Search
-export const globalSearch = async (params = {}) => {
-  const { data } = await api.get('/search', { params });
+// ── Branches ────────────────────────────────────────────────
+export const fetchBranches = async () => {
+  const { data } = await api.get('/branches');
   return data.data;
 };
-
-// Ratings
-export const getFileRatings = async (fileId) => {
-  const { data } = await api.get(`/ratings/${fileId}`);
+export const fetchAllBranches = async () => {
+  const { data } = await api.get('/admin/branches');
   return data.data;
 };
-export const rateFile = async (fileId, stars, comment = '') => {
-  const { data } = await api.post(`/ratings/${fileId}`, { stars, comment });
+export const createBranch = async (payload) => {
+  const { data } = await api.post('/admin/branches', payload);
   return data.data;
 };
-export const deleteRating = async (fileId) => {
-  const { data } = await api.delete(`/ratings/${fileId}`);
+export const updateBranch = async (id, payload) => {
+  const { data } = await api.patch(`/admin/branches/${id}`, payload);
+  return data.data;
+};
+export const deleteBranch = async (id) => {
+  const { data } = await api.delete(`/admin/branches/${id}`);
   return data;
-};
-
-// Download History
-export const fetchDownloadHistory = async () => {
-  const { data } = await api.get('/downloads');
-  return data.data;
-};
-
-// User Management
-export const fetchAllUsers = async (params = {}) => {
-  const { data } = await api.get('/admin/users', { params });
-  return data.data;
-};
-export const toggleUserActive = async (id) => {
-  const { data } = await api.patch(`/admin/users/${id}/toggle`);
-  return data.data;
 };
 
 export default api;
