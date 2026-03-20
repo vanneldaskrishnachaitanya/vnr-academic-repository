@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import {
   BookOpen, ChevronDown, LayoutDashboard,
   LogOut, Shield, Bell, Sun, Moon, Check,
-  Trash2,
+  Trash2, Search, Download,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { fetchNotifications, markAllNotificationsRead, deleteNotification } from '../api/apiClient';
@@ -106,6 +106,16 @@ export default function Navbar({ theme, toggleTheme }) {
 
         {/* Right side */}
         <div className="navbar__right">
+
+          {/* Search */}
+          <button className="navbar__icon-btn" onClick={() => navigate('/search')} title="Search files">
+            <Search size={17} />
+          </button>
+
+          {/* Downloads */}
+          <button className="navbar__icon-btn" onClick={() => navigate('/downloads')} title="Download history">
+            <Download size={17} />
+          </button>
 
           {/* Dark/Light toggle */}
           <button className="navbar__icon-btn" onClick={toggleTheme} title={theme === 'dark' ? 'Light mode' : 'Dark mode'}>

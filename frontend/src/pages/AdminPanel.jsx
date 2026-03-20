@@ -1,12 +1,14 @@
 import { useCallback, useEffect, useState } from 'react';
 import {
   Check, Flag, Loader2, RefreshCw, Shield,
-  Trash2, X, Megaphone, Plus, BarChart2, Eye,
+  Trash2, X, Megaphone, Plus, BarChart2, Eye, Users,
+  CheckCircle, XCircle, GraduationCap,
 } from 'lucide-react';
 import {
   approveFile, deleteFile, fetchPendingFiles,
   fetchReports, rejectFile, resolveReport,
   fetchAnnouncements, createAnnouncement, deleteAnnouncement,
+  fetchAllUsers, toggleUserActive,
 } from '../api/apiClient';
 import FileCard from '../components/FileCard';
 import { useNavigate } from 'react-router-dom';
@@ -15,6 +17,7 @@ const TABS = [
   { id: 'pending',       label: 'Pending',       icon: <Check size={14} /> },
   { id: 'reports',       label: 'Reports',        icon: <Flag size={14} /> },
   { id: 'announcements', label: 'Announcements',  icon: <Megaphone size={14} /> },
+  { id: 'users',         label: 'Users',           icon: <Users size={14} /> },
 ];
 
 function RejectDialog({ file, onConfirm, onCancel }) {
@@ -58,6 +61,9 @@ export default function AdminPanel() {
   const [announcements, setAnnouncements] = useState([]);
   const [aLoading, setALoading]           = useState(false);
   const [newAnn, setNewAnn]               = useState({ title: '', message: '', type: 'info' });
+  const [users, setUsers]                 = useState([]);
+  const [uLoading, setULoading]           = useState(false);
+  const [uSearch, setUSearch]             = useState('');
   const [aSubmitting, setASubmitting]     = useState(false);
 
   const [rejectTarget,  setRejectTarget]  = useState(null);
@@ -92,6 +98,22 @@ export default function AdminPanel() {
     if (activeTab === 'reports') loadReports();
     if (activeTab === 'announcements') loadAnnouncements();
   }, [activeTab, loadReports, loadAnnouncements]);
+
+  const loadUsers = useCallback(async () => {
+    setULoading(true);
+    try { const d = await fetchAllUsers({ search: uSearch, limit: 50 }); setUsers(d.users || []); }
+    catch {} finally { setULoading(false); }
+  }, [uSearch]);
+
+  useEffect(() => { if (activeTab === 'users') loadUsers(); }, [activeTab, loadUsers]);
+
+  const handleToggleUser = async (id, name, isActive) => {
+    try {
+      await toggleUserActive(id);
+      setUsers(prev => prev.map(u => u._id === id ? { ...u, isActive: !u.isActive } : u));
+      toast(`${name} ${isActive ? 'deactivated' : 'activated'} ✓`);
+    } catch (e) { toast(`Error: ${e.message}`); }
+  };
 
   // ── Single approve ──
   const handleApprove = async (id) => {
@@ -195,7 +217,7 @@ export default function AdminPanel() {
             {t.id === 'reports' && reports.length > 0 && <span className="tab-bar__badge tab-bar__badge--red">{reports.length}</span>}
           </button>
         ))}
-        <button className="tab-bar__refresh" onClick={activeTab === 'pending' ? loadPending : activeTab === 'reports' ? loadReports : loadAnnouncements}>
+        <button className="tab-bar__refresh" onClick={activeTab === 'pending' ? loadPending : activeTab === 'reports' ? loadReports : activeTab === 'users' ? loadUsers : loadAnnouncements}>
           <RefreshCw size={15} />
         </button>
       </div>
@@ -326,6 +348,47 @@ export default function AdminPanel() {
                   <button className="btn btn--danger btn--sm" onClick={() => handleDeleteAnnouncement(a._id)}>
                     <Trash2 size={13} />
                   </button>
+                </div>
+              ))}
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* Users tab */}
+      {activeTab === 'users' && (
+        <section className="admin-panel__section">
+          <div className="users-page__filters" style={{marginBottom:'1rem'}}>
+            <input className="reg-page__search" placeholder="Search users…" value={uSearch}
+              onChange={e => setUSearch(e.target.value)} style={{flex:1}} />
+          </div>
+          {uLoading ? <div className="admin-panel__loader"><Loader2 size={26} className="spin"/> Loading…</div>
+          : users.length === 0 ? <div className="admin-panel__empty"><Users size={36}/><p>No users found</p></div>
+          : (
+            <div className="users-list">
+              {users.map(user => (
+                <div key={user._id} className={`user-row${!user.isActive?' user-row--inactive':''}`}>
+                  <div className="user-row__avatar">
+                    {user.avatarUrl ? <img src={user.avatarUrl} alt={user.name}/> : <span>{user.name?.slice(0,2).toUpperCase()}</span>}
+                  </div>
+                  <div className="user-row__body">
+                    <p className="user-row__name">{user.name}</p>
+                    <p className="user-row__email">{user.email}</p>
+                  </div>
+                  <div className="user-row__meta">
+                    <span className={`user-row__role user-row__role--${user.role}`}>
+                      {user.role==='admin' ? <><Shield size={11}/> Admin</> : <><GraduationCap size={11}/> Student</>}
+                    </span>
+                    <span className={`user-row__status${user.isActive?' user-row__status--active':' user-row__status--inactive'}`}>
+                      {user.isActive ? <><CheckCircle size={11}/> Active</> : <><XCircle size={11}/> Inactive</>}
+                    </span>
+                  </div>
+                  {user.role !== 'admin' && (
+                    <button className={`btn btn--sm ${user.isActive?'btn--danger':'btn--success'}`}
+                      onClick={() => handleToggleUser(user._id, user.name, user.isActive)}>
+                      {user.isActive ? 'Deactivate' : 'Activate'}
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

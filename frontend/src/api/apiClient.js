@@ -162,4 +162,41 @@ export const fetchAnalytics = async () => {
   return data.data;
 };
 
+
+// Global Search
+export const globalSearch = async (params = {}) => {
+  const { data } = await api.get('/search', { params });
+  return data.data;
+};
+
+// Ratings
+export const getFileRatings = async (fileId) => {
+  const { data } = await api.get(`/ratings/${fileId}`);
+  return data.data;
+};
+export const rateFile = async (fileId, stars, comment = '') => {
+  const { data } = await api.post(`/ratings/${fileId}`, { stars, comment });
+  return data.data;
+};
+export const deleteRating = async (fileId) => {
+  const { data } = await api.delete(`/ratings/${fileId}`);
+  return data;
+};
+
+// Download History
+export const fetchDownloadHistory = async () => {
+  const { data } = await api.get('/downloads');
+  return data.data;
+};
+
+// User Management
+export const fetchAllUsers = async (params = {}) => {
+  const { data } = await api.get('/admin/users', { params });
+  return data.data;
+};
+export const toggleUserActive = async (id) => {
+  const { data } = await api.patch(`/admin/users/${id}/toggle`);
+  return data.data;
+};
+
 export default api;

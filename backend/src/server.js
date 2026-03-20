@@ -18,7 +18,7 @@ const { adminRouter }       = require('./routes/fileRoutes');
 const reportRoutes          = require('./routes/reportRoutes');
 const { adminReportRouter } = require('./routes/reportRoutes');
 const folderRoutes          = require('./routes/folderRoutes');
-const { notificationRouter, announcementRouter, bookmarkRouter, adminExtrasRouter } = require('./routes/newRoutes');
+const { notificationRouter, announcementRouter, bookmarkRouter, adminExtrasRouter, ratingRouter, historyRouter, searchRouter } = require('./routes/newRoutes');
 
 const app = express();
 app.set('trust proxy', 1);
@@ -83,6 +83,9 @@ app.use('/reports',       reportRoutes);
 app.use('/notifications', notificationRouter);
 app.use('/announcements', announcementRouter);
 app.use('/bookmarks',     bookmarkRouter);
+app.use('/ratings',       ratingRouter);
+app.use('/downloads',     historyRouter);
+app.use('/search',        searchRouter);
 app.use('/admin',         adminRouter);
 app.use('/admin',         adminReportRouter);
 app.use('/admin',         adminExtrasRouter);

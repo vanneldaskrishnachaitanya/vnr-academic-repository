@@ -123,6 +123,9 @@ const FileSchema = new mongoose.Schema(
       min:     0,
     },
 
+    avgRating:   { type: Number, default: 0, min: 0, max: 5 },
+    ratingCount: { type: Number, default: 0, min: 0 },
+
     /** Explicit upload timestamp (complements Mongoose createdAt) */
     uploadedAt: {
       type:    Date,

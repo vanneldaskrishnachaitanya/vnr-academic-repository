@@ -8,6 +8,8 @@ const { getNotifications, markAllRead, markOneRead, deleteNotification } = requi
 const { getAnnouncements, createAnnouncement, deleteAnnouncement, toggleAnnouncement } = require('../controllers/announcementController');
 const { getBookmarks, addBookmark, removeBookmark } = require('../controllers/bookmarkController');
 const { getAnalytics } = require('../controllers/analyticsController');
+const { getFileRatings, rateFile, deleteRating } = require('../controllers/ratingController');
+const { getDownloadHistory, globalSearch, getAllUsers, toggleUserActive } = require('../controllers/extraController');
 
 // ── Notifications ─────────────────────────────────────────────
 const notificationRouter = express.Router();
@@ -33,4 +35,18 @@ adminExtrasRouter.post('/announcements',           protect, restrictTo('admin'),
 adminExtrasRouter.delete('/announcements/:id',     protect, restrictTo('admin'), deleteAnnouncement);
 adminExtrasRouter.patch('/announcements/:id',      protect, restrictTo('admin'), toggleAnnouncement);
 
-module.exports = { notificationRouter, announcementRouter, bookmarkRouter, adminExtrasRouter };
+const ratingRouter = express.Router();
+ratingRouter.get('/:fileId',    protect, getFileRatings);
+ratingRouter.post('/:fileId',   protect, rateFile);
+ratingRouter.delete('/:fileId', protect, deleteRating);
+
+const historyRouter = express.Router();
+historyRouter.get('/', protect, getDownloadHistory);
+
+const searchRouter = express.Router();
+searchRouter.get('/', protect, globalSearch);
+
+adminExtrasRouter.get('/users',              protect, restrictTo('admin'), getAllUsers);
+adminExtrasRouter.patch('/users/:id/toggle', protect, restrictTo('admin'), toggleUserActive);
+
+module.exports = { notificationRouter, announcementRouter, bookmarkRouter, adminExtrasRouter, ratingRouter, historyRouter, searchRouter };

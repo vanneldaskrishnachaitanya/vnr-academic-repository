@@ -16,6 +16,7 @@ const {
 } = require('../services/fileService');
 
 const logger = require('../utils/logger');
+const { recordDownload } = require('./extraController');
 const { createNotification } = require('./notificationController');
 
 /* ─────────────────────────────────────────────
@@ -257,6 +258,8 @@ const downloadFile = async (req, res, next) => {
       req.params.id,
       { $inc: { downloadCount: 1 } }
     ).exec();
+
+    recordDownload(req.user._id, file);
 
     logger.info(`Download: ${file.originalName} by ${req.user.email}`);
 

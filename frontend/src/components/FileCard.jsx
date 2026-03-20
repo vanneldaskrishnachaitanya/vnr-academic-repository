@@ -1,170 +1,220 @@
-// src/components/FileCard.jsx
+import { useState } from 'react';
 import {
-  Download, Eye, FileText, Flag, Image,
-  Presentation, FileSpreadsheet, Calendar,
-  User, Clock, TrendingDown, CheckCircle,
-  AlertCircle, Timer, Trash2
-} from "lucide-react";
-
-import api from "../api/apiClient";
-import { useAuth } from "../hooks/useAuth";
+  Download, Eye, FileText, Flag, Image, Presentation,
+  FileSpreadsheet, Calendar, User, Clock, TrendingDown,
+  CheckCircle, AlertCircle, Timer, Trash2, Star, Share2,
+  X, Loader2,
+} from 'lucide-react';
+import api, { getFileRatings, rateFile } from '../api/apiClient';
+import { useAuth } from '../hooks/useAuth';
+import StarRating from './StarRating';
 
 const MIME_CONFIG = {
-  "application/pdf": { icon: <FileText size={22} />, label: "PDF",   color: "file-icon--pdf" },
-  "image/png":       { icon: <Image size={22} />,    label: "Image", color: "file-icon--img" },
-  "image/jpeg":      { icon: <Image size={22} />,    label: "Image", color: "file-icon--img" },
-  "image/webp":      { icon: <Image size={22} />,    label: "Image", color: "file-icon--img" },
-  "application/vnd.ms-powerpoint": { icon: <Presentation size={22} />, label: "PPT",  color: "file-icon--ppt" },
-  "application/vnd.openxmlformats-officedocument.presentationml.presentation": { icon: <Presentation size={22} />, label: "PPTX", color: "file-icon--ppt" },
-  "application/vnd.ms-excel": { icon: <FileSpreadsheet size={22} />, label: "XLS",  color: "file-icon--xls" },
-  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": { icon: <FileSpreadsheet size={22} />, label: "XLSX", color: "file-icon--xls" },
+  'application/pdf': { icon: <FileText size={22} />, label: 'PDF',   color: 'file-icon--pdf' },
+  'image/png':       { icon: <Image size={22} />,    label: 'Image', color: 'file-icon--img' },
+  'image/jpeg':      { icon: <Image size={22} />,    label: 'Image', color: 'file-icon--img' },
+  'image/webp':      { icon: <Image size={22} />,    label: 'Image', color: 'file-icon--img' },
+  'application/vnd.ms-powerpoint': { icon: <Presentation size={22} />, label: 'PPT',  color: 'file-icon--ppt' },
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation': { icon: <Presentation size={22} />, label: 'PPTX', color: 'file-icon--ppt' },
+  'application/vnd.ms-excel': { icon: <FileSpreadsheet size={22} />, label: 'XLS', color: 'file-icon--xls' },
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet': { icon: <FileSpreadsheet size={22} />, label: 'XLSX', color: 'file-icon--xls' },
 };
 
-const getMimeConfig = (mime) =>
-  MIME_CONFIG[mime] || { icon: <FileText size={22} />, label: "FILE", color: "file-icon--default" };
-
-const formatBytes = (bytes) => {
-  if (!bytes) return "";
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
-  return `${(bytes / 1048576).toFixed(1)} MB`;
-};
-
-const formatDate = (date) => {
-  if (!date) return "";
-  return new Date(date).toLocaleDateString("en-IN", {
-    day: "2-digit", month: "short", year: "numeric"
-  });
-};
+const getMimeConfig = (mime) => MIME_CONFIG[mime] || { icon: <FileText size={22} />, label: 'FILE', color: 'file-icon--default' };
+const formatBytes = (b) => !b ? '' : b < 1024 ? `${b} B` : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : `${(b/1048576).toFixed(1)} MB`;
+const formatDate  = (d) => !d ? '' : new Date(d).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' });
 
 const StatusDot = ({ status }) => {
-  const config = {
-    approved: { icon: <CheckCircle size={11} />, cls: "status--approved", label: "Approved" },
-    pending:  { icon: <Timer size={11} />,       cls: "status--pending",  label: "Pending"  },
-    rejected: { icon: <AlertCircle size={11} />, cls: "status--rejected", label: "Rejected" },
+  const cfg = {
+    approved: { icon: <CheckCircle size={11} />, cls: 'status--approved', label: 'Approved' },
+    pending:  { icon: <Timer size={11} />,       cls: 'status--pending',  label: 'Pending'  },
+    rejected: { icon: <AlertCircle size={11} />, cls: 'status--rejected', label: 'Rejected' },
   };
-  const { icon, cls, label } = config[status] || config.pending;
+  const { icon, cls, label } = cfg[status] || cfg.pending;
   return <span className={`fc-status ${cls}`}>{icon}{label}</span>;
 };
 
+// Skeleton loader — export for use in SubjectPage
+export function FileCardSkeleton() {
+  return (
+    <div className="file-card file-card--skeleton">
+      <div className="skeleton skeleton--icon" />
+      <div className="skeleton-body">
+        <div className="skeleton skeleton--title" />
+        <div className="skeleton skeleton--meta" />
+        <div className="skeleton skeleton--meta" style={{ width: '55%' }} />
+      </div>
+      <div className="skeleton-actions">
+        <div className="skeleton skeleton--btn" />
+        <div className="skeleton skeleton--btn" />
+      </div>
+    </div>
+  );
+}
+
 export default function FileCard({ file, showStatus = false, onReport, compact = false }) {
-
   const { backendUser } = useAuth();
-  const isAdmin = backendUser?.role === "admin";
-
+  const isAdmin = backendUser?.role === 'admin';
   const mime = getMimeConfig(file.mimeType);
 
-  const canPreview =
-    file.mimeType === "application/pdf" ||
-    file.mimeType?.startsWith("image/") ||
-    file.mimeType?.includes("word") ||
-    file.mimeType?.includes("powerpoint") ||
-    file.mimeType?.includes("presentation") ||
-    file.mimeType?.includes("spreadsheet") ||
-    file.mimeType?.includes("excel");
+  const [previewOpen,     setPreviewOpen]     = useState(false);
+  const [ratingOpen,      setRatingOpen]      = useState(false);
+  const [myStars,         setMyStars]         = useState(file.myRating?.stars || 0);
+  const [avgRating,       setAvgRating]       = useState(file.avgRating || 0);
+  const [ratingCount,     setRatingCount]     = useState(file.ratingCount || 0);
+  const [ratingComment,   setRatingComment]   = useState('');
+  const [ratingLoading,   setRatingLoading]   = useState(false);
+  const [copied,          setCopied]          = useState(false);
 
-  const uploaderName =
-    file.uploadedBy?.name ||
-    file.uploadedBy?.email?.split("@")[0] ||
-    "Unknown";
+  const canPreview = file.mimeType === 'application/pdf' || file.mimeType?.startsWith('image/')
+    || file.mimeType?.includes('word') || file.mimeType?.includes('powerpoint')
+    || file.mimeType?.includes('presentation') || file.mimeType?.includes('spreadsheet')
+    || file.mimeType?.includes('excel');
 
-  const dateStr = formatDate(file.uploadedAt || file.createdAt);
+  const uploaderName = file.uploadedBy?.name || file.uploadedBy?.email?.split('@')[0] || 'Unknown';
+  const dateStr      = formatDate(file.uploadedAt || file.createdAt);
 
-  /* ───────── PREVIEW ───────── */
-  const handlePreview = () => {
-    if (!file.filePath) return alert("Preview not available.");
-
-    if (file.mimeType?.startsWith("image/")) {
-      window.open(file.filePath, "_blank");
-      return;
-    }
-
-    // Use Google Docs viewer for PDFs and Office files
-    const url = `https://docs.google.com/viewer?url=${encodeURIComponent(file.filePath)}&embedded=false`;
-    window.open(url, "_blank");
+  const getPreviewUrl = () => {
+    if (!file.filePath) return null;
+    if (file.mimeType?.startsWith('image/')) return file.filePath;
+    return `https://docs.google.com/viewer?url=${encodeURIComponent(file.filePath)}&embedded=true`;
   };
 
-  /* ───────── DOWNLOAD ───────── */
   const handleDownload = async () => {
-    if (!file.filePath) return alert("Download not available.");
-
+    if (!file.filePath) return alert('Download not available.');
     try {
-      const response = await fetch(file.filePath);
-      if (!response.ok) throw new Error("Failed to fetch file");
-      const blob = await response.blob();
-      const blobUrl = window.URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = blobUrl;
-      link.download = file.originalName || "download";
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(blobUrl);
-    } catch (err) {
-      // Fallback: open directly
-      window.open(file.filePath, "_blank");
-    }
+      const res = await fetch(file.filePath);
+      if (!res.ok) throw new Error();
+      const blob = await res.blob();
+      const url  = window.URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = file.originalName || 'download';
+      document.body.appendChild(a); a.click();
+      document.body.removeChild(a); window.URL.revokeObjectURL(url);
+    } catch { window.open(file.filePath, '_blank'); }
   };
 
-  /* ───────── DELETE (ADMIN) ───────── */
+  const handleShare = () => {
+    navigator.clipboard.writeText(window.location.href).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    });
+  };
+
   const handleDelete = async () => {
     if (!window.confirm(`Delete "${file.originalName}"?`)) return;
+    try { await api.delete(`/admin/files/${file._id}`); window.location.reload(); }
+    catch { alert('Delete failed'); }
+  };
+
+  const handleRatingSubmit = async () => {
+    if (!myStars) return;
+    setRatingLoading(true);
     try {
-      await api.delete(`/admin/files/${file._id}`);
-      window.location.reload();
-    } catch (err) {
-      alert("Delete failed");
-    }
+      await rateFile(file._id, myStars, ratingComment);
+      const fresh = await getFileRatings(file._id);
+      setAvgRating(fresh.avg); setRatingCount(fresh.total);
+      setRatingOpen(false);
+    } catch {}
+    finally { setRatingLoading(false); }
   };
 
   return (
-    <article className={`file-card ${compact ? "file-card--compact" : ""}`}>
-
-      <div className={`file-card__icon ${mime.color}`}>
-        {mime.icon}
-        <span className="file-card__type-label">{mime.label}</span>
-      </div>
-
-      <div className="file-card__info">
-        <div className="file-card__title-row">
-          <h3 className="file-card__name" title={file.originalName}>
-            {file.originalName}
-          </h3>
-          {showStatus && <StatusDot status={file.status} />}
+    <>
+      <article className={`file-card${compact ? ' file-card--compact' : ''}`}>
+        <div className={`file-card__icon ${mime.color}`}>
+          {mime.icon}
+          <span className="file-card__type-label">{mime.label}</span>
         </div>
 
-        <div className="file-card__meta">
-          <span className="file-card__chip"><User size={11} /> {uploaderName}</span>
-          {dateStr && <span className="file-card__chip"><Calendar size={11} /> {dateStr}</span>}
-          {file.fileSize > 0 && <span className="file-card__chip">{formatBytes(file.fileSize)}</span>}
-          {file.downloadCount > 0 && <span className="file-card__chip"><TrendingDown size={11} /> {file.downloadCount}</span>}
-          {file.year && <span className="file-card__chip"><Clock size={11} /> {file.year}</span>}
+        <div className="file-card__info">
+          <div className="file-card__title-row">
+            <h3 className="file-card__name" title={file.originalName}>{file.originalName}</h3>
+            {showStatus && <StatusDot status={file.status} />}
+          </div>
+          <div className="file-card__meta">
+            <span className="file-card__chip"><User size={11} /> {uploaderName}</span>
+            {dateStr && <span className="file-card__chip"><Calendar size={11} /> {dateStr}</span>}
+            {file.fileSize > 0 && <span className="file-card__chip">{formatBytes(file.fileSize)}</span>}
+            {file.downloadCount > 0 && <span className="file-card__chip"><TrendingDown size={11} /> {file.downloadCount}</span>}
+            {file.year && <span className="file-card__chip"><Clock size={11} /> {file.year}</span>}
+            {ratingCount > 0 && (
+              <span className="file-card__chip file-card__chip--rating">
+                <Star size={11} fill="currentColor" /> {avgRating} ({ratingCount})
+              </span>
+            )}
+          </div>
         </div>
-      </div>
 
-      <div className="file-card__actions">
-        {canPreview && (
-          <button className="fc-btn fc-btn--preview" onClick={handlePreview}>
-            <Eye size={14} /><span>Preview</span>
+        <div className="file-card__actions">
+          {canPreview && (
+            <button className="fc-btn fc-btn--preview" onClick={() => setPreviewOpen(true)}>
+              <Eye size={14} /><span>Preview</span>
+            </button>
+          )}
+          <button className="fc-btn fc-btn--download" onClick={handleDownload}>
+            <Download size={14} /><span>Download</span>
           </button>
-        )}
-
-        <button className="fc-btn fc-btn--download" onClick={handleDownload}>
-          <Download size={14} /><span>Download</span>
-        </button>
-
-        {isAdmin && (
-          <button className="fc-btn fc-btn--delete" onClick={handleDelete}>
-            <Trash2 size={14} /><span>Delete</span>
+          <button className="fc-btn fc-btn--share" onClick={handleShare} title="Copy link">
+            <Share2 size={13} />
+            {copied && <span style={{ fontSize: '0.7rem' }}>Copied!</span>}
           </button>
-        )}
+          {!isAdmin && (
+            <button className="fc-btn fc-btn--rate" onClick={() => setRatingOpen(r => !r)} title="Rate">
+              <Star size={13} fill={myStars > 0 ? 'currentColor' : 'none'} />
+            </button>
+          )}
+          {isAdmin && (
+            <button className="fc-btn fc-btn--delete" onClick={handleDelete}>
+              <Trash2 size={14} /><span>Delete</span>
+            </button>
+          )}
+          {!isAdmin && onReport && (
+            <button className="fc-btn fc-btn--flag" onClick={() => onReport(file)}>
+              <Flag size={13} />
+            </button>
+          )}
+        </div>
 
-        {!isAdmin && onReport && (
-          <button className="fc-btn fc-btn--flag" onClick={() => onReport(file)}>
-            <Flag size={13} />
-          </button>
+        {/* Inline rating panel */}
+        {ratingOpen && (
+          <div className="file-card__rating-panel">
+            <p className="file-card__rating-label">Rate this file</p>
+            <StarRating value={myStars} onChange={setMyStars} size={20} />
+            <input className="file-card__rating-comment" placeholder="Optional comment…"
+              value={ratingComment} onChange={e => setRatingComment(e.target.value)} maxLength={300} />
+            <div className="file-card__rating-actions">
+              <button className="btn btn--primary btn--sm" disabled={!myStars || ratingLoading} onClick={handleRatingSubmit}>
+                {ratingLoading ? <Loader2 size={13} className="spin" /> : <Star size={13} />} Submit
+              </button>
+              <button className="btn btn--ghost btn--sm" onClick={() => setRatingOpen(false)}>Cancel</button>
+            </div>
+          </div>
         )}
-      </div>
-    </article>
+      </article>
+
+      {/* Inline preview modal */}
+      {previewOpen && (
+        <div className="preview-modal-overlay" onClick={e => e.target === e.currentTarget && setPreviewOpen(false)}>
+          <div className="preview-modal">
+            <div className="preview-modal__header">
+              <span className="preview-modal__title">{file.originalName}</span>
+              <div style={{ display:'flex', gap:'0.5rem' }}>
+                <a href={file.filePath} target="_blank" rel="noreferrer" className="fc-btn fc-btn--download">
+                  <Download size={13} /> Open
+                </a>
+                <button className="preview-modal__close" onClick={() => setPreviewOpen(false)}><X size={16} /></button>
+              </div>
+            </div>
+            <div className="preview-modal__body">
+              {file.mimeType?.startsWith('image/') ? (
+                <img src={file.filePath} alt={file.originalName} className="preview-modal__img" />
+              ) : (
+                <iframe src={getPreviewUrl()} className="preview-modal__iframe" title={file.originalName} allowFullScreen />
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+    </>
   );
 }
