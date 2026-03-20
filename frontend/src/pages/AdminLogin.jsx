@@ -1,7 +1,7 @@
 // src/pages/AdminLogin.jsx
 import { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { Shield, AlertCircle, Loader2, ArrowLeft, CheckCircle } from 'lucide-react';
+import { Shield, AlertCircle, Loader2, ArrowLeft } from 'lucide-react';
 import { signInWithPopup } from 'firebase/auth';
 import { auth, provider, firebaseSignOut } from '../auth/firebase';
 import { isAdminEmail } from '../auth/adminWhitelist';
@@ -10,11 +10,10 @@ import { useAuth } from '../hooks/useAuth';
 export default function AdminLogin() {
   const navigate = useNavigate();
   const { isAuthenticated, isAdmin } = useAuth();
-  const [loading,  setLoading]  = useState(false);
-  const [error,    setError]    = useState('');
-  const [step,     setStep]     = useState(''); // status message shown to user
+  const [loading, setLoading] = useState(false);
+  const [error,   setError]   = useState('');
+  const [step,    setStep]    = useState('');
 
-  // Already fully authenticated as admin → go to panel
   if (isAuthenticated && isAdmin) {
     navigate('/admin', { replace: true });
     return null;
@@ -26,67 +25,38 @@ export default function AdminLogin() {
     setLoading(true);
 
     try {
-      // ── Step 1: Google popup ───────────────────────────────
       setStep('Opening Google sign-in…');
       const result = await signInWithPopup(auth, provider);
       const { user } = result;
       const email = user.email?.toLowerCase().trim();
 
-      // ── Step 2: Frontend whitelist check ──────────────────
-      setStep('Checking admin permissions…');
+      setStep('Verifying administrator credentials…');
       if (!isAdminEmail(email)) {
         await firebaseSignOut();
-        setError(
-          `"${user.email}" is not on the admin whitelist.\n\n` +
-          `To add yourself, open:\nsrc/auth/adminWhitelist.js\nand add your email to the ADMIN_WHITELIST array.`
-        );
+        setError(`Access denied. "${user.email}" does not have administrator privileges.`);
         setLoading(false);
         setStep('');
         return;
       }
 
-      // ── Step 3: Firebase verified — let AuthProvider handle the rest ──
-      // AuthProvider's onAuthStateChanged fires automatically after signInWithPopup.
-      // It will call loginToBackend. If that fails (backend down / domain issue),
-      // we catch it here and show a clear message.
-      setStep('Verifying with server…');
+      setStep('Establishing secure session…');
 
-      // Wait up to 8 seconds for AuthProvider to update
       const startTime = Date.now();
       await new Promise((resolve, reject) => {
         const interval = setInterval(() => {
-          // Check if auth state has resolved
-          if (auth.currentUser) {
-            clearInterval(interval);
-            resolve();
-          }
-          if (Date.now() - startTime > 8000) {
-            clearInterval(interval);
-            reject(new Error('timeout'));
-          }
+          if (auth.currentUser) { clearInterval(interval); resolve(); }
+          if (Date.now() - startTime > 8000) { clearInterval(interval); reject(new Error('timeout')); }
         }, 200);
       });
 
-      // Navigate — AuthProvider will redirect back to /admin-login if role isn't admin
       setStep('Redirecting to admin panel…');
       navigate('/admin', { replace: true });
 
     } catch (err) {
-      if (
-        err.code === 'auth/popup-closed-by-user' ||
-        err.code === 'auth/cancelled-popup-request'
-      ) {
-        setError('Sign-in cancelled. Please try again.');
+      if (err.code === 'auth/popup-closed-by-user' || err.code === 'auth/cancelled-popup-request') {
+        setError('Sign-in was cancelled. Please try again.');
       } else if (err.message === 'timeout') {
-        // Backend is down — still navigate, AdminRoute will handle the rest
-        // OR show a helpful error
-        setError(
-          'Could not reach the backend server.\n\n' +
-          'Make sure your backend is running:\n' +
-          '  cd your-backend-folder\n' +
-          '  npm run dev\n\n' +
-          'It should be running on http://localhost:5000'
-        );
+        setError('Server is temporarily unavailable. Please try again in a moment.');
         await firebaseSignOut().catch(() => {});
       } else {
         setError(err.message || 'Sign-in failed. Please try again.');
@@ -120,11 +90,10 @@ export default function AdminLogin() {
 
         <div className="admin-login__body">
           <p className="admin-login__desc">
-            Restricted to authorised administrators only.
-            Sign in with your admin Google account.
+            This portal is exclusively for authorised admins only.
+            Unauthorised access attempts are logged and monitored.
           </p>
 
-          {/* Step indicator */}
           {step && !error && (
             <div className="admin-login__step">
               <Loader2 size={14} className="spin" />
@@ -132,29 +101,10 @@ export default function AdminLogin() {
             </div>
           )}
 
-          {/* Error box */}
           {error && (
             <div className="admin-login__error" role="alert">
               <AlertCircle size={16} className="admin-login__error-icon" />
-              <pre className="admin-login__error-text">{error}</pre>
-            </div>
-          )}
-
-          {/* Checklist — what needs to be true */}
-          {!loading && !error && (
-            <div className="admin-login__checklist">
-              <div className="admin-login__check">
-                <CheckCircle size={13} className="admin-login__check-icon" />
-                Backend running on port 5000
-              </div>
-              <div className="admin-login__check">
-                <CheckCircle size={13} className="admin-login__check-icon" />
-                ADMIN_EMAILS set in backend .env
-              </div>
-              <div className="admin-login__check">
-                <CheckCircle size={13} className="admin-login__check-icon" />
-                Email in adminWhitelist.js
-              </div>
+              <p className="admin-login__error-text">{error}</p>
             </div>
           )}
 
@@ -179,7 +129,7 @@ export default function AdminLogin() {
           </button>
 
           <div className="admin-login__hint">
-            <Shield size={12} /> Access restricted to whitelisted emails only.
+            <Shield size={12} /> For authorised VNRVJIET administrators only.
           </div>
         </div>
       </div>
