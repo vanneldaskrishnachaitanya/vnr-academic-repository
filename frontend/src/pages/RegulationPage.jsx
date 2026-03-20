@@ -260,14 +260,12 @@ export default function RegulationPage() {
                           <FolderOpen size={14} /> Subjects
                           <span className="drill-step__ctx"> — Y{year} · Sem {sem}</span>
                         </p>
-                        {isAdmin && (
-                          <button
-                            className="branch-accordion__new-btn"
-                            onClick={() => { setCreating(key); setFolderName(''); setFolderError(''); }}
-                          >
-                            <FolderPlus size={14} /> New folder
-                          </button>
-                        )}
+                        <button
+                          className="branch-accordion__new-btn"
+                          onClick={() => { setCreating(key); setFolderName(''); setFolderError(''); }}
+                        >
+                          <FolderPlus size={14} /> New folder
+                        </button>
                       </div>
 
                       {isCreating && (
@@ -307,14 +305,12 @@ export default function RegulationPage() {
                             <div className="subject-folder-empty">
                               <FolderOpen size={32} />
                               <p>No subjects yet for Y{year} · Sem {sem}</p>
-                              {isAdmin && (
-                                <button
-                                  className="btn btn--ghost btn--sm"
-                                  onClick={() => { setCreating(key); setFolderName(''); setFolderError(''); }}
-                                >
-                                  <FolderPlus size={13} /> Add subject
-                                </button>
-                              )}
+                              <button
+                                className="btn btn--ghost btn--sm"
+                                onClick={() => { setCreating(key); setFolderName(''); setFolderError(''); }}
+                              >
+                                <FolderPlus size={13} /> Add subject
+                              </button>
                             </div>
                           )}
 
