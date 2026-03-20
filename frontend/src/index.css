@@ -2696,3 +2696,65 @@ YEAR / SEMESTER DRILL-DOWN NAVIGATION
   border-radius: 100px; padding: 0.1rem 0.45rem;
   font-family: var(--font-mono); font-size: 0.68rem; font-weight: 700;
 }
+/* ── Preview modal fix ── */
+.preview-modal-overlay {
+  position: fixed !important;
+  inset: 0 !important;
+  z-index: 9999 !important;
+  background: #000000c0 !important;
+  backdrop-filter: blur(6px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 1.5rem !important;
+}
+
+.preview-modal {
+  width: min(900px, 94vw) !important;
+  height: min(88vh, 860px) !important;
+  max-height: 88vh !important;
+  background: var(--bg-card) !important;
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-lg) !important;
+  box-shadow: 0 24px 80px #000000c0 !important;
+  display: flex !important;
+  flex-direction: column !important;
+  overflow: hidden !important;
+  animation: slideUp 0.25s var(--ease) !important;
+  position: relative !important;
+}
+
+.preview-modal__header {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 0.85rem 1.25rem !important;
+  border-bottom: 1px solid var(--border) !important;
+  background: var(--bg-raised) !important;
+  gap: 1rem !important;
+  flex-shrink: 0 !important;
+  min-height: 52px !important;
+}
+
+.preview-modal__body {
+  flex: 1 !important;
+  overflow: hidden !important;
+  position: relative !important;
+  min-height: 0 !important;
+}
+
+.preview-modal__iframe {
+  width: 100% !important;
+  height: 100% !important;
+  border: none !important;
+  display: block !important;
+  min-height: 400px !important;
+}
+
+.preview-modal__img {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: contain !important;
+  display: block !important;
+  padding: 1rem !important;
+}
