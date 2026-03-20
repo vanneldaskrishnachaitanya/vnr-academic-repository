@@ -18,7 +18,18 @@ const { adminRouter }       = require('./routes/fileRoutes');
 const reportRoutes          = require('./routes/reportRoutes');
 const { adminReportRouter } = require('./routes/reportRoutes');
 const folderRoutes          = require('./routes/folderRoutes');
-const { notificationRouter, announcementRouter, bookmarkRouter, adminExtrasRouter, ratingRouter, historyRouter, searchRouter, branchRouter } = require('./routes/newRoutes');
+
+const {
+  notificationRouter,
+  announcementRouter,
+  bookmarkRouter,
+  adminExtrasRouter,
+  ratingRouter,
+  historyRouter,
+  searchRouter,
+  branchRouter,
+} = require('./routes/newRoutes');
+
 const { seedBranches } = require('./controllers/branchController');
 
 const app = express();
@@ -26,7 +37,6 @@ app.set('trust proxy', 1);
 
 app.use(helmet());
 
-// CORS — allow all Vercel deployments + localhost
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:3000',
@@ -39,7 +49,6 @@ app.use(cors({
   origin: function(origin, callback) {
     if (!origin) return callback(null, true);
     if (allowedOrigins.includes(origin)) return callback(null, true);
-    // Allow any vercel.app subdomain
     if (origin.endsWith('.vercel.app')) return callback(null, true);
     return callback(new Error('Not allowed by CORS: ' + origin));
   },
@@ -64,7 +73,6 @@ const globalLimiter = rateLimit({
   legacyHeaders: false,
   message: { success: false, message: 'Too many requests. Try again in 15 minutes.' }
 });
-
 app.use(globalLimiter);
 
 const authLimiter = rateLimit({
@@ -98,7 +106,6 @@ app.use((req, res) => {
 
 app.use((err, req, res, next) => {
   logger.error(`${req.method} ${req.path} → ${err.message}`, err);
-
   if (err.name === 'ValidationError') {
     return res.status(400).json({ success: false, message: 'Validation failed', errors: Object.values(err.errors).map(e => e.message) });
   }
@@ -115,7 +122,6 @@ app.use((err, req, res, next) => {
   if (err instanceof require('multer').MulterError) {
     return res.status(415).json({ success: false, message: err.message });
   }
-
   const status = err.statusCode || err.status || 500;
   return res.status(status).json({ success: false, message: status < 500 ? err.message : 'Internal server error' });
 });
