@@ -3202,3 +3202,6 @@ YEAR / SEMESTER DRILL-DOWN NAVIGATION
   border: 1px solid var(--amber-border);
   padding: 0.35rem 0.5rem;
 }
+.star-btn { color: #d4a017 !important; }
+.star-btn--filled { color: var(--amber) !important; }
+.star-btn:not(.star-btn--filled) { color: #3a3520 !important; }
