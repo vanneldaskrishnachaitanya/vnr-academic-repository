@@ -46,9 +46,9 @@ export default function Navbar({ theme, toggleTheme }) {
   }, []);
 
   const handleLogout = async () => {
+    if (!window.confirm('Are you sure you want to sign out?')) return;
     setOpen(false);
     try { await logout(); } catch {}
-    navigate('/login', { replace: true });
   };
 
   const handleMarkAllRead = async () => {

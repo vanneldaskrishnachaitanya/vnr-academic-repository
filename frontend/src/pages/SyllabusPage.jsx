@@ -178,9 +178,19 @@ export default function SyllabusPage() {
                     <button className="fc-btn fc-btn--preview" onClick={() => setPreview(s)}>
                       <Eye size={13}/> Preview
                     </button>
-                    <a href={s.fileUrl} download={s.fileName} className="fc-btn fc-btn--download">
+                    <button className="fc-btn fc-btn--download" onClick={async () => {
+                      try {
+                        const res = await fetch(s.fileUrl);
+                        const blob = await res.blob();
+                        const url = URL.createObjectURL(blob);
+                        const a = document.createElement('a');
+                        a.href = url; a.download = s.fileName;
+                        document.body.appendChild(a); a.click();
+                        document.body.removeChild(a); URL.revokeObjectURL(url);
+                      } catch { window.open(s.fileUrl, '_blank'); }
+                    }}>
                       <Download size={13}/> Download
-                    </a>
+                    </button>
                     {isAdmin && (
                       <button className="fc-btn fc-btn--delete" onClick={() => handleDelete(s._id)}>
                         <Trash2 size={13}/>
