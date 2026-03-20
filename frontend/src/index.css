@@ -3147,3 +3147,58 @@ YEAR / SEMESTER DRILL-DOWN NAVIGATION
   .user-row { flex-wrap: wrap !important; }
   .user-row__meta { width: 100%; }
 }
+/* ══════════════════════════════════════════════════════════════
+   FILE CARD WRAPPER + RATING PANEL FIX
+   Add this at the bottom of index.css
+══════════════════════════════════════════════════════════════ */
+
+/* Wrapper keeps file-card row + rating panel stacked cleanly */
+.file-card-wrapper {
+  display: flex;
+  flex-direction: column;
+}
+
+/* Rating panel sits below the card, not inside it */
+.file-card__rating-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+  padding: 0.85rem 1rem;
+  background: var(--bg-raised);
+  border: 1px solid var(--border);
+  border-top: none;
+  border-radius: 0 0 var(--radius) var(--radius);
+  animation: drillIn 0.2s var(--ease);
+}
+.file-card__rating-label {
+  font-size: 0.78rem; font-weight: 700; color: var(--text-2);
+  text-transform: uppercase; letter-spacing: 0.06em;
+}
+.file-card__rating-comment {
+  padding: 0.5rem 0.75rem;
+  background: var(--bg-card); border: 1px solid var(--border);
+  border-radius: var(--radius-sm); color: var(--text-1); font-size: 0.85rem;
+  transition: border-color 0.15s;
+}
+.file-card__rating-comment:focus { outline: none; border-color: var(--amber); }
+.file-card__rating-actions { display: flex; gap: 0.5rem; }
+
+/* Rating chip on file card */
+.file-card__chip--rating {
+  color: var(--amber);
+  background: var(--amber-dim);
+  border-color: var(--amber-border);
+}
+
+/* Share button */
+.fc-btn--share {
+  background: #14b8a618;
+  color: var(--teal);
+  border: 1px solid #14b8a635;
+}
+.fc-btn--rate {
+  background: var(--amber-dim);
+  color: var(--amber);
+  border: 1px solid var(--amber-border);
+  padding: 0.35rem 0.5rem;
+}

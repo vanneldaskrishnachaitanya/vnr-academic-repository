@@ -34,7 +34,6 @@ const StatusDot = ({ status }) => {
   return <span className={`fc-status ${cls}`}>{icon}{label}</span>;
 };
 
-// Skeleton loader — export for use in SubjectPage
 export function FileCardSkeleton() {
   return (
     <div className="file-card file-card--skeleton">
@@ -57,14 +56,14 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
   const isAdmin = backendUser?.role === 'admin';
   const mime = getMimeConfig(file.mimeType);
 
-  const [previewOpen,     setPreviewOpen]     = useState(false);
-  const [ratingOpen,      setRatingOpen]      = useState(false);
-  const [myStars,         setMyStars]         = useState(file.myRating?.stars || 0);
-  const [avgRating,       setAvgRating]       = useState(file.avgRating || 0);
-  const [ratingCount,     setRatingCount]     = useState(file.ratingCount || 0);
-  const [ratingComment,   setRatingComment]   = useState('');
-  const [ratingLoading,   setRatingLoading]   = useState(false);
-  const [copied,          setCopied]          = useState(false);
+  const [previewOpen,   setPreviewOpen]   = useState(false);
+  const [ratingOpen,    setRatingOpen]    = useState(false);
+  const [myStars,       setMyStars]       = useState(file.myRating?.stars || 0);
+  const [avgRating,     setAvgRating]     = useState(file.avgRating || 0);
+  const [ratingCount,   setRatingCount]   = useState(file.ratingCount || 0);
+  const [ratingComment, setRatingComment] = useState('');
+  const [ratingLoading, setRatingLoading] = useState(false);
+  const [copied,        setCopied]        = useState(false);
 
   const canPreview = file.mimeType === 'application/pdf' || file.mimeType?.startsWith('image/')
     || file.mimeType?.includes('word') || file.mimeType?.includes('powerpoint')
@@ -72,7 +71,7 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
     || file.mimeType?.includes('excel');
 
   const uploaderName = file.uploadedBy?.name || file.uploadedBy?.email?.split('@')[0] || 'Unknown';
-  const dateStr      = formatDate(file.uploadedAt || file.createdAt);
+  const dateStr = formatDate(file.uploadedAt || file.createdAt);
 
   const getPreviewUrl = () => {
     if (!file.filePath) return null;
@@ -117,69 +116,72 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
       await rateFile(file._id, myStars, ratingComment);
       const fresh = await getFileRatings(file._id);
       setAvgRating(fresh.avg); setRatingCount(fresh.total);
-      setRatingOpen(false);
+      setRatingOpen(false); setRatingComment('');
     } catch {}
     finally { setRatingLoading(false); }
   };
 
   return (
     <>
-      <article className={`file-card${compact ? ' file-card--compact' : ''}`}>
-        <div className={`file-card__icon ${mime.color}`}>
-          {mime.icon}
-          <span className="file-card__type-label">{mime.label}</span>
-        </div>
-
-        <div className="file-card__info">
-          <div className="file-card__title-row">
-            <h3 className="file-card__name" title={file.originalName}>{file.originalName}</h3>
-            {showStatus && <StatusDot status={file.status} />}
+      {/* Wrapper div so rating panel sits BELOW the file-card row */}
+      <div className="file-card-wrapper">
+        <article className={`file-card${compact ? ' file-card--compact' : ''}`}>
+          <div className={`file-card__icon ${mime.color}`}>
+            {mime.icon}
+            <span className="file-card__type-label">{mime.label}</span>
           </div>
-          <div className="file-card__meta">
-            <span className="file-card__chip"><User size={11} /> {uploaderName}</span>
-            {dateStr && <span className="file-card__chip"><Calendar size={11} /> {dateStr}</span>}
-            {file.fileSize > 0 && <span className="file-card__chip">{formatBytes(file.fileSize)}</span>}
-            {file.downloadCount > 0 && <span className="file-card__chip"><TrendingDown size={11} /> {file.downloadCount}</span>}
-            {file.year && <span className="file-card__chip"><Clock size={11} /> {file.year}</span>}
-            {ratingCount > 0 && (
-              <span className="file-card__chip file-card__chip--rating">
-                <Star size={11} fill="currentColor" /> {avgRating} ({ratingCount})
-              </span>
+
+          <div className="file-card__info">
+            <div className="file-card__title-row">
+              <h3 className="file-card__name" title={file.originalName}>{file.originalName}</h3>
+              {showStatus && <StatusDot status={file.status} />}
+            </div>
+            <div className="file-card__meta">
+              <span className="file-card__chip"><User size={11} /> {uploaderName}</span>
+              {dateStr && <span className="file-card__chip"><Calendar size={11} /> {dateStr}</span>}
+              {file.fileSize > 0 && <span className="file-card__chip">{formatBytes(file.fileSize)}</span>}
+              {file.downloadCount > 0 && <span className="file-card__chip"><TrendingDown size={11} /> {file.downloadCount}</span>}
+              {file.year && <span className="file-card__chip"><Clock size={11} /> {file.year}</span>}
+              {ratingCount > 0 && (
+                <span className="file-card__chip file-card__chip--rating">
+                  <Star size={11} fill="currentColor" /> {avgRating} ({ratingCount})
+                </span>
+              )}
+            </div>
+          </div>
+
+          <div className="file-card__actions">
+            {canPreview && (
+              <button className="fc-btn fc-btn--preview" onClick={() => setPreviewOpen(true)}>
+                <Eye size={14} /><span>Preview</span>
+              </button>
+            )}
+            <button className="fc-btn fc-btn--download" onClick={handleDownload}>
+              <Download size={14} /><span>Download</span>
+            </button>
+            <button className="fc-btn fc-btn--share" onClick={handleShare} title="Copy link">
+              <Share2 size={13} />
+              {copied && <span style={{ fontSize: '0.7rem' }}>Copied!</span>}
+            </button>
+            {!isAdmin && (
+              <button className="fc-btn fc-btn--rate" onClick={() => setRatingOpen(r => !r)} title="Rate">
+                <Star size={13} fill={myStars > 0 ? 'currentColor' : 'none'} />
+              </button>
+            )}
+            {isAdmin && (
+              <button className="fc-btn fc-btn--delete" onClick={handleDelete}>
+                <Trash2 size={14} /><span>Delete</span>
+              </button>
+            )}
+            {!isAdmin && onReport && (
+              <button className="fc-btn fc-btn--flag" onClick={() => onReport(file)}>
+                <Flag size={13} />
+              </button>
             )}
           </div>
-        </div>
+        </article>
 
-        <div className="file-card__actions">
-          {canPreview && (
-            <button className="fc-btn fc-btn--preview" onClick={() => setPreviewOpen(true)}>
-              <Eye size={14} /><span>Preview</span>
-            </button>
-          )}
-          <button className="fc-btn fc-btn--download" onClick={handleDownload}>
-            <Download size={14} /><span>Download</span>
-          </button>
-          <button className="fc-btn fc-btn--share" onClick={handleShare} title="Copy link">
-            <Share2 size={13} />
-            {copied && <span style={{ fontSize: '0.7rem' }}>Copied!</span>}
-          </button>
-          {!isAdmin && (
-            <button className="fc-btn fc-btn--rate" onClick={() => setRatingOpen(r => !r)} title="Rate">
-              <Star size={13} fill={myStars > 0 ? 'currentColor' : 'none'} />
-            </button>
-          )}
-          {isAdmin && (
-            <button className="fc-btn fc-btn--delete" onClick={handleDelete}>
-              <Trash2 size={14} /><span>Delete</span>
-            </button>
-          )}
-          {!isAdmin && onReport && (
-            <button className="fc-btn fc-btn--flag" onClick={() => onReport(file)}>
-              <Flag size={13} />
-            </button>
-          )}
-        </div>
-
-        {/* Inline rating panel */}
+        {/* Rating panel — OUTSIDE article, below the card */}
         {ratingOpen && (
           <div className="file-card__rating-panel">
             <p className="file-card__rating-label">Rate this file</p>
@@ -194,9 +196,9 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
             </div>
           </div>
         )}
-      </article>
+      </div>
 
-      {/* Inline preview modal */}
+      {/* Preview modal */}
       {previewOpen && (
         <div className="preview-modal-overlay" onClick={e => e.target === e.currentTarget && setPreviewOpen(false)}>
           <div className="preview-modal">
