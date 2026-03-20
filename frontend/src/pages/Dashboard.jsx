@@ -40,7 +40,7 @@ export default function Dashboard() {
   const [stats, setStats] = useState(null);
 
   useEffect(() => {
-    fetchAnalytics().then(d => setStats(d)).catch(() => {});
+    fetchAnalytics().then(d => setStats(d.overview || d)).catch(() => {});
   }, []);
 
   return (
@@ -61,12 +61,16 @@ export default function Dashboard() {
         </div>
         <div className="dash-hero__stat-row">
           <div className="dash-hero__stat">
-            <Layers size={16} />
-            3 Regulations
+            <BookOpen size={16} />
+            {stats ? `${stats.approvedFiles ?? 0} Papers` : '— Papers'}
           </div>
           <div className="dash-hero__stat">
-            <BookOpen size={16} />
-            6 Branches
+            <Layers size={16} />
+            {stats ? `${stats.totalFolders ?? 0} Subjects` : '— Subjects'}
+          </div>
+          <div className="dash-hero__stat">
+            <GraduationCap size={16} />
+            {stats ? `${stats.totalUsers ?? 0} Students` : '— Students'}
           </div>
         </div>
       </section>

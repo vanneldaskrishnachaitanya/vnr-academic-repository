@@ -17,6 +17,7 @@ const {
   approveFile,
   rejectFile,
   deleteFile,
+  toggleImportant,
   getFolders,
   createFolder,
   deleteFolder

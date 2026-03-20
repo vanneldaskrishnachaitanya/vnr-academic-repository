@@ -443,6 +443,17 @@ const deleteFolder = async (req, res, next) => {
   }
 };
 
+// PATCH /admin/files/:id/important
+const toggleImportant = async (req, res, next) => {
+  try {
+    const file = await File.findById(req.params.id);
+    if (!file) return res.status(404).json({ success: false, message: 'File not found' });
+    file.isImportant = !file.isImportant;
+    await file.save();
+    res.json({ success: true, data: { file } });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   uploadFile,
   getFiles,

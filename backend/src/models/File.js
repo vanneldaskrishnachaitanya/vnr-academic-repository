@@ -91,8 +91,8 @@ const FileSchema = new mongoose.Schema(
       required: true,
     },
 
-    /** Admin can hide their name from file card */
-    hideUploaderName: { type: Boolean, default: false },
+    /** Admin can mark as important for exam */
+    isImportant: { type: Boolean, default: false },
 
     /** upload → pending → approved | rejected */
     status: {

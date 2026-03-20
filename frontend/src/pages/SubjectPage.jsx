@@ -17,7 +17,8 @@ import {
 } from 'lucide-react';
 import { fetchFiles, reportFile, fetchBookmarks, addBookmark, removeBookmark } from '../api/apiClient';
 import FileCard    from '../components/FileCard';
-import UploadModal from '../components/UploadModal';
+import UploadModal     from '../components/UploadModal';
+import BulkUploadModal from '../components/BulkUploadModal';
 
 // ── Config ───────────────────────────────────────────────────
 const PAPER_SECTIONS = [
@@ -67,7 +68,8 @@ export default function SubjectPage() {
 
   // UI
   const [mainTab,    setMainTab]    = useState('papers');   // papers | resources
-  const [uploadOpen, setUploadOpen] = useState(false);
+  const [uploadOpen,     setUploadOpen]     = useState(false);
+  const [bulkOpen,       setBulkOpen]       = useState(false);
   const [uploadCat,  setUploadCat]  = useState('paper');
 
   // Report modal
@@ -294,6 +296,12 @@ export default function SubjectPage() {
       )}
 
       {/* ── Upload modal ─────────────────────────────────────── */}
+      <BulkUploadModal
+        isOpen={bulkOpen}
+        onClose={() => setBulkOpen(false)}
+        onDone={() => { setBulkOpen(false); loadFiles(); }}
+        prefill={{ regulation, branch, subject }}
+      />
       <UploadModal
         isOpen={uploadOpen}
         onClose={() => setUploadOpen(false)}

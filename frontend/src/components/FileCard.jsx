@@ -5,7 +5,7 @@ import {
   CheckCircle, AlertCircle, Timer, Trash2, Star, Share2,
   X, Loader2,
 } from 'lucide-react';
-import api, { getFileRatings, rateFile, recordDownloadApi } from '../api/apiClient';
+import api, { getFileRatings, rateFile, recordDownloadApi, toggleImportant } from '../api/apiClient';
 import { useAuth } from '../hooks/useAuth';
 import StarRating from './StarRating';
 
@@ -64,30 +64,14 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
   const [ratingComment, setRatingComment] = useState('');
   const [ratingLoading, setRatingLoading] = useState(false);
   const [copied,        setCopied]        = useState(false);
+  const [important,     setImportant]     = useState(file.isImportant || false);
 
   const canPreview = file.mimeType === 'application/pdf' || file.mimeType?.startsWith('image/')
     || file.mimeType?.includes('word') || file.mimeType?.includes('powerpoint')
     || file.mimeType?.includes('presentation') || file.mimeType?.includes('spreadsheet')
     || file.mimeType?.includes('excel');
 
-  // Extract roll number from @vnrvjiet.in email (e.g. 24071a05m2@vnrvjiet.in → 24071a05m2)
-  // Admin files: show 'Admin' or nothing based on showUploaderName field
-  const getDisplayName = () => {
-    const uploader = file.uploadedBy;
-    if (!uploader) return null;
-    // If admin chose to hide their name
-    if (file.hideUploaderName) return null;
-    // Admin: show "Admin"
-    if (uploader.role === 'admin') return 'Admin';
-    // Student: extract roll number from vnrvjiet email
-    const email = uploader.email || '';
-    if (email.endsWith('@vnrvjiet.in')) {
-      return email.split('@')[0].toUpperCase();
-    }
-    // Fallback to name
-    return uploader.name || email.split('@')[0] || 'Unknown';
-  };
-  const uploaderName = getDisplayName();
+  const uploaderName = file.uploadedBy?.name || file.uploadedBy?.email?.split('@')[0] || 'Unknown';
   const dateStr = formatDate(file.uploadedAt || file.createdAt);
 
   const isPdf = file.mimeType === 'application/pdf';
@@ -154,10 +138,11 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
           <div className="file-card__info">
             <div className="file-card__title-row">
               <h3 className="file-card__name" title={file.originalName}>{file.originalName}</h3>
+              {important && <span className="file-card__important-badge">⭐ Important</span>}
               {showStatus && <StatusDot status={file.status} />}
             </div>
             <div className="file-card__meta">
-              {uploaderName && <span className="file-card__chip"><User size={11} /> {uploaderName}</span>}
+              <span className="file-card__chip"><User size={11} /> {uploaderName}</span>
               {dateStr && <span className="file-card__chip"><Calendar size={11} /> {dateStr}</span>}
               {file.fileSize > 0 && <span className="file-card__chip">{formatBytes(file.fileSize)}</span>}
               {file.downloadCount > 0 && <span className="file-card__chip"><TrendingDown size={11} /> {file.downloadCount}</span>}
@@ -179,23 +164,19 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
             <button className="fc-btn fc-btn--download" onClick={handleDownload}>
               <Download size={14} /><span>Download</span>
             </button>
-            <div className="fc-share-group">
-              <button className="fc-btn fc-btn--share" onClick={handleShare} title="Copy link">
-                <Share2 size={13} />
-                {copied && <span style={{ fontSize: '0.7rem' }}>Copied!</span>}
-              </button>
-              <button className="fc-btn fc-btn--whatsapp" title="Share on WhatsApp"
-                onClick={() => {
-                  const msg = `📚 *${file.subject || file.originalName}* (${file.regulation || ''} · ${file.branch || ''})
-🔗 ${window.location.href}`;
-                  window.open(`https://wa.me/?text=${encodeURIComponent(msg)}`, '_blank');
-                }}>
-                💬
-              </button>
-            </div>
+            <button className="fc-btn fc-btn--share" onClick={handleShare} title="Copy link">
+              <Share2 size={13} />
+              {copied && <span style={{ fontSize: '0.7rem' }}>Copied!</span>}
+            </button>
             {!isAdmin && (
               <button className="fc-btn fc-btn--rate" onClick={() => setRatingOpen(r => !r)} title="Rate">
                 <Star size={13} fill={myStars > 0 ? 'currentColor' : 'none'} />
+              </button>
+            )}
+            {isAdmin && (
+              <button className="fc-btn fc-btn--important" title={important ? 'Unmark important' : 'Mark as important'}
+                onClick={async () => { try { await toggleImportant(file._id); setImportant(p => !p); } catch {} }}>
+                {important ? '⭐' : '☆'}
               </button>
             )}
             {isAdmin && (
