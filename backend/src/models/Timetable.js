@@ -5,7 +5,7 @@ const TimetableSchema = new mongoose.Schema({
   regulation: { type: String, required: true, uppercase: true, trim: true },
   branch:     { type: String, required: true, uppercase: true, trim: true },
   year:       { type: String, required: true, enum: ['1','2','3','4'] },
-  sem:        { type: String, required: true, enum: ['1','2'] },
+  sem:        { type: String, required: true, enum: ['mid1','mid2','sem'] },
   title:      { type: String, required: true, trim: true },
   fileUrl:    { type: String, required: true },
   fileName:   { type: String, required: true },

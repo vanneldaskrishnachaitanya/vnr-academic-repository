@@ -6,7 +6,11 @@ import { useAuth } from '../hooks/useAuth';
 const REGULATIONS = ['R25', 'R22', 'R19'];
 const BRANCHES    = ['CSE', 'ECE', 'EEE', 'IT', 'MECH', 'CIVIL', 'AIML'];
 const YEARS       = ['1', '2', '3', '4'];
-const SEMS        = ['1', '2'];
+const SEMS = [
+  { id:'mid1', label:'Mid-1'    },
+  { id:'mid2', label:'Mid-2'    },
+  { id:'sem',  label:'Semester' },
+];
 const formatBytes = (b) => !b ? '' : b < 1048576 ? `${(b/1024).toFixed(1)} KB` : `${(b/1048576).toFixed(1)} MB`;
 
 export default function TimetablePage() {
@@ -21,7 +25,7 @@ export default function TimetablePage() {
   const [year,       setYear]       = useState('');
   const [sem,        setSem]        = useState('');
   const [showForm,   setShowForm]   = useState(false);
-  const [form,       setForm]       = useState({ regulation:'R22', branch:'CSE', year:'1', sem:'1', title:'' });
+  const [form,       setForm]       = useState({ regulation:'R22', branch:'CSE', year:'1', sem:'mid1', title:'' });
   const [file,       setFile]       = useState(null);
   const [uploading,  setUploading]  = useState(false);
   const [toast,      setToast]      = useState('');
@@ -100,7 +104,7 @@ export default function TimetablePage() {
         <label className="modal__label">Semester
           <select className="modal__select" value={sem} onChange={e => setSem(e.target.value)}>
             <option value="">All Sems</option>
-            {SEMS.map(s => <option key={s} value={s}>Sem {s}</option>)}
+            {SEMS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
           </select>
         </label>
       </div>
@@ -127,7 +131,7 @@ export default function TimetablePage() {
             </label>
             <label className="modal__label">Semester
               <select className="modal__select" value={form.sem} onChange={e => setForm(f=>({...f,sem:e.target.value}))}>
-                {SEMS.map(s => <option key={s} value={s}>Sem {s}</option>)}
+                {SEMS.map(s => <option key={s.id} value={s.id}>{s.label}</option>)}
               </select>
             </label>
           </div>
@@ -169,15 +173,25 @@ export default function TimetablePage() {
               <div className="syllabus-item__icon"><FileText size={22}/></div>
               <div className="syllabus-item__body">
                 <p className="syllabus-item__title">{t.title}</p>
-                <p className="syllabus-item__meta">{t.regulation} · {t.branch} · Year {t.year} · Sem {t.sem} · {formatBytes(t.fileSize)}</p>
+                <p className="syllabus-item__meta">{t.regulation} · {t.branch} · Year {t.year} · {SEMS.find(s=>s.id===t.sem)?.label || t.sem} · {formatBytes(t.fileSize)}</p>
               </div>
               <div className="syllabus-item__actions">
                 <button className="fc-btn fc-btn--preview" onClick={() => setPreview(t)}>
                   <Eye size={13}/> Preview
                 </button>
-                <a href={t.fileUrl} download={t.fileName} className="fc-btn fc-btn--download">
+                <button className="fc-btn fc-btn--download" onClick={async () => {
+                    try {
+                      const res = await fetch(t.fileUrl);
+                      const blob = await res.blob();
+                      const url = URL.createObjectURL(blob);
+                      const a = document.createElement('a');
+                      a.href = url; a.download = t.fileName;
+                      document.body.appendChild(a); a.click();
+                      document.body.removeChild(a); URL.revokeObjectURL(url);
+                    } catch { window.open(t.fileUrl, '_blank'); }
+                  }}>
                   <Download size={13}/> Download
-                </a>
+                </button>
                 {isAdmin && (
                   <button className="fc-btn fc-btn--delete" onClick={() => handleDelete(t._id)}>
                     <Trash2 size={13}/>
