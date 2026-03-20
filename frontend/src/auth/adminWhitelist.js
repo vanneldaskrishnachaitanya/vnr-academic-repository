@@ -9,6 +9,7 @@
 
 export const ADMIN_WHITELIST = [
   'vanneldaskrishnachaitanya@gmail.com',
+  'deepmusicworld369@gmail.com',
   // 'nextemail@gmail.com',   ← uncomment and add more here later
 ];
 
