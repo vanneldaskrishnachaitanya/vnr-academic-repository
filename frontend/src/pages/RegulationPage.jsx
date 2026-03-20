@@ -47,10 +47,12 @@ export default function RegulationPage() {
 
     try {
 
-      const { folders } = await fetchFolders({
+      const result = await fetchFolders({
         regulation,
         branch: branchId
       });
+
+      const folders = result?.folders || result?.data?.folders || [];
 
       setSubjects((s) => ({
         ...s,
@@ -111,11 +113,13 @@ export default function RegulationPage() {
       return;
     }
 
-    const { folder } = await createFolder({
+    const result2 = await createFolder({
       regulation,
       branch: branchId,
       subject: name
     });
+
+    const folder = result2?.folder || result2?.data?.folder;
 
     setSubjects((s) => ({
       ...s,

@@ -74,13 +74,12 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
   const handlePreview = () => {
     if (!file.filePath) return alert("Preview not available.");
 
-    // Images — open directly
     if (file.mimeType?.startsWith("image/")) {
       window.open(file.filePath, "_blank");
       return;
     }
 
-    // PDFs and Office files — use Google Docs viewer
+    // Use Google Docs viewer for PDFs and Office files
     const url = `https://docs.google.com/viewer?url=${encodeURIComponent(file.filePath)}&embedded=false`;
     window.open(url, "_blank");
   };
@@ -90,35 +89,30 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
     if (!file.filePath) return alert("Download not available.");
 
     try {
-      // Fetch the file as a blob so we can rename it to originalName
       const response = await fetch(file.filePath);
+      if (!response.ok) throw new Error("Failed to fetch file");
       const blob = await response.blob();
-
-      // Create object URL and trigger download with clean original filename
       const blobUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = blobUrl;
-      link.download = file.originalName; // ← clean filename, no timestamp
+      link.download = file.originalName || "download";
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
       window.URL.revokeObjectURL(blobUrl);
-
     } catch (err) {
-      console.error("Download failed", err);
-      // Fallback — open directly in new tab
+      // Fallback: open directly
       window.open(file.filePath, "_blank");
     }
   };
 
   /* ───────── DELETE (ADMIN) ───────── */
   const handleDelete = async () => {
-    if (!window.confirm(`Delete "${file.originalName}" ?`)) return;
+    if (!window.confirm(`Delete "${file.originalName}"?`)) return;
     try {
       await api.delete(`/admin/files/${file._id}`);
       window.location.reload();
     } catch (err) {
-      console.error(err);
       alert("Delete failed");
     }
   };
@@ -140,47 +134,28 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
         </div>
 
         <div className="file-card__meta">
-          <span className="file-card__chip">
-            <User size={11} /> {uploaderName}
-          </span>
-          {dateStr && (
-            <span className="file-card__chip">
-              <Calendar size={11} /> {dateStr}
-            </span>
-          )}
-          {file.fileSize > 0 && (
-            <span className="file-card__chip">{formatBytes(file.fileSize)}</span>
-          )}
-          {file.downloadCount > 0 && (
-            <span className="file-card__chip">
-              <TrendingDown size={11} /> {file.downloadCount}
-            </span>
-          )}
-          {file.year && (
-            <span className="file-card__chip">
-              <Clock size={11} /> {file.year}
-            </span>
-          )}
+          <span className="file-card__chip"><User size={11} /> {uploaderName}</span>
+          {dateStr && <span className="file-card__chip"><Calendar size={11} /> {dateStr}</span>}
+          {file.fileSize > 0 && <span className="file-card__chip">{formatBytes(file.fileSize)}</span>}
+          {file.downloadCount > 0 && <span className="file-card__chip"><TrendingDown size={11} /> {file.downloadCount}</span>}
+          {file.year && <span className="file-card__chip"><Clock size={11} /> {file.year}</span>}
         </div>
       </div>
 
       <div className="file-card__actions">
         {canPreview && (
           <button className="fc-btn fc-btn--preview" onClick={handlePreview}>
-            <Eye size={14} />
-            <span>Preview</span>
+            <Eye size={14} /><span>Preview</span>
           </button>
         )}
 
         <button className="fc-btn fc-btn--download" onClick={handleDownload}>
-          <Download size={14} />
-          <span>Download</span>
+          <Download size={14} /><span>Download</span>
         </button>
 
         {isAdmin && (
           <button className="fc-btn fc-btn--delete" onClick={handleDelete}>
-            <Trash2 size={14} />
-            <span>Delete</span>
+            <Trash2 size={14} /><span>Delete</span>
           </button>
         )}
 
@@ -189,7 +164,6 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
             <Flag size={13} />
           </button>
         )}
-
       </div>
     </article>
   );
