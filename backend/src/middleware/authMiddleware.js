@@ -37,9 +37,11 @@ const protect = async (req, res, next) => {
 
     // ── Admin override logic ─────────────────────────
 
-    const ADMIN_EMAILS = [
-      "vanneldaskrishnachaitanya@gmail.com"
-    ];
+    // Read admin emails from environment variable (comma-separated)
+    const ADMIN_EMAILS = (process.env.ADMIN_EMAILS || '')
+      .split(',')
+      .map(e => e.trim().toLowerCase())
+      .filter(Boolean);
 
     const emailLower = email.toLowerCase();
     const isAdmin = ADMIN_EMAILS.includes(emailLower);
