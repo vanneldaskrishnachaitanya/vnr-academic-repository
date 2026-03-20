@@ -51,7 +51,8 @@ const storage = new CloudinaryStorage({
       resource_type: resourceType,
 
       // Include extension in public_id — critical for correct download format
-      public_id: `${Date.now()}-${nameWithoutExt}${ext}`
+      public_id: `${Date.now()}-${nameWithoutExt}${ext}`,
+      access_mode: 'public'
     };
 
   }
