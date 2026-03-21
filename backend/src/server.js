@@ -32,6 +32,8 @@ const {
   codingRouter,
   syllabusRouter,
   timetableRouter,
+  statsRouter,
+  feedbackRouter,
 } = require('./routes/newRoutes');
 const { seedCodingData } = require('./controllers/codingController');
 
@@ -105,6 +107,8 @@ app.use('/exams',         examRouter);
 app.use('/coding',        codingRouter);
 app.use('/syllabus',      syllabusRouter);
 app.use('/timetable',     timetableRouter);
+app.use('/stats',         statsRouter);
+app.use('/feedback',      feedbackRouter);
 app.use('/admin',         adminRouter);
 app.use('/admin',         adminReportRouter);
 app.use('/admin',         adminExtrasRouter);

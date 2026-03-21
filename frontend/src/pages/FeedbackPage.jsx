@@ -105,13 +105,15 @@ export default function FeedbackPage() {
           Share your ideas, request new features, suggest branches or files.<br />
           Your feedback shapes ExamVault!
         </p>
-        <button className="btn btn--primary" style={{ marginTop: '1rem' }} onClick={() => setShowForm(s => !s)}>
-          <Plus size={14} /> Share Your Feedback
-        </button>
+        {!isAdmin && (
+          <button className="btn btn--primary" style={{ marginTop: '1rem' }} onClick={() => setShowForm(s => !s)}>
+            <Plus size={14} /> Share Your Feedback
+          </button>
+        )}
       </div>
 
-      {/* Submit form */}
-      {showForm && (
+      {/* Submit form — students only */}
+      {showForm && !isAdmin && (
         <div className="feedback-form">
           <h3 className="feedback-form__title">New Feedback</h3>
           <div className="feedback-form__cats">
