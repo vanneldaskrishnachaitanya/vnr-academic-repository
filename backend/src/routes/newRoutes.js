@@ -16,6 +16,8 @@ const {
   toggleCodingItem, suggestPlatform, getSuggestions, reviewSuggestion,
 } = require('../controllers/codingController');
 const { getBranches, getAllBranches, createBranch, updateBranch, deleteBranch } = require('../controllers/branchController');
+const { getFeedback, createFeedback, upvoteFeedback, reviewFeedback, deleteFeedback } = require('../controllers/feedbackController');
+const { getPublicStats } = require('../controllers/analyticsController');
 
 // ── Notifications ─────────────────────────────────────────────
 const notificationRouter = express.Router();
