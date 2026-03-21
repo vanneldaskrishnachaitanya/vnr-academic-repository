@@ -71,7 +71,16 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
     || file.mimeType?.includes('presentation') || file.mimeType?.includes('spreadsheet')
     || file.mimeType?.includes('excel');
 
-  const uploaderName = file.uploadedBy?.name || file.uploadedBy?.email?.split('@')[0] || 'Unknown';
+  const getDisplayName = () => {
+    const uploader = file.uploadedBy;
+    if (!uploader) return null;
+    if (file.hideUploaderName) return null;
+    if (uploader.role === 'admin') return null; // admin always hidden
+    const email = uploader.email || '';
+    if (email.endsWith('@vnrvjiet.in')) return email.split('@')[0].toUpperCase();
+    return uploader.name || email.split('@')[0] || null;
+  };
+  const uploaderName = getDisplayName();
   const dateStr = formatDate(file.uploadedAt || file.createdAt);
 
   const isPdf = file.mimeType === 'application/pdf';
@@ -142,7 +151,7 @@ export default function FileCard({ file, showStatus = false, onReport, compact =
               {showStatus && <StatusDot status={file.status} />}
             </div>
             <div className="file-card__meta">
-              <span className="file-card__chip"><User size={11} /> {uploaderName}</span>
+              {uploaderName && <span className="file-card__chip"><User size={11} /> {uploaderName}</span>}
               {dateStr && <span className="file-card__chip"><Calendar size={11} /> {dateStr}</span>}
               {file.fileSize > 0 && <span className="file-card__chip">{formatBytes(file.fileSize)}</span>}
               {file.downloadCount > 0 && <span className="file-card__chip"><TrendingDown size={11} /> {file.downloadCount}</span>}
