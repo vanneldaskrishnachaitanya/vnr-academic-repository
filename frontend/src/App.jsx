@@ -1,6 +1,6 @@
 // src/App.jsx
 import { Suspense, lazy } from 'react';
-import { Navigate, Route, Routes } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { useAuth } from './hooks/useAuth';
 
 const MainLayout = lazy(() => import('./layouts/MainLayout'));
@@ -72,8 +72,28 @@ function LazyPage({ children }) {
 
 // ── Route tree ────────────────────────────────────────────────
 export default function App() {
+  const { isAuthenticated, loading } = useAuth();
+  const location = useLocation();
+  const showBackgroundVideo =
+    !loading &&
+    isAuthenticated &&
+    location.pathname !== '/login' &&
+    location.pathname !== '/admin-login';
+
   return (
     <>
+      {showBackgroundVideo && (
+        <video
+          className="site-bg-video"
+          src="/Background.mp4"
+          autoPlay
+          loop
+          muted
+          playsInline
+          preload="auto"
+        />
+      )}
+
       <Routes>
 
         {/* ── Public ─────────────────────────────────────────── */}
