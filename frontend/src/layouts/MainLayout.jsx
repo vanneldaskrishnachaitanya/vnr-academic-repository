@@ -224,6 +224,16 @@ export default function MainLayout() {
 
   return (
     <div className="layout" ref={layoutRef}>
+      <video
+        ref={videoRef}
+        className="site-bg-video"
+        src="/Background.mp4"
+        autoPlay
+        loop
+        muted
+        playsInline
+        preload="auto"
+      />
 
       <Navbar
         theme={activeTheme}

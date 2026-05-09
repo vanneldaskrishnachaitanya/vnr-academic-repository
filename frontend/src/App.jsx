@@ -74,15 +74,6 @@ function LazyPage({ children }) {
 export default function App() {
   return (
     <>
-      <video
-        className="site-bg-video"
-        src="/Background.mp4"
-        autoPlay
-        loop
-        muted
-        playsInline
-        preload="auto"
-      />
       <Routes>
 
         {/* ── Public ─────────────────────────────────────────── */}
